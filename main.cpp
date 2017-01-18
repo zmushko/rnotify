@@ -9,13 +9,21 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	Config* conf = new Config(argc, argv);
+	App* app = new App(argc, argv);
 
-	conf->printConfig();
+	app->printConfig();
 
-	delete conf;
+	delete app;
 
 	return 0;
+}
+
+App::App(int count, char** values) : Config(count, values)
+{
+}
+
+App::~App()
+{
 }
 
 Config::Config(int count, char** values)

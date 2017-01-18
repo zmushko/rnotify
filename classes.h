@@ -3,8 +3,9 @@
 
 #include <vector>
 
-class Config {
-	private:
+class Config 
+{
+	protected:
 		int verbose;
 		string pid;
 		bool no_demon;
@@ -19,6 +20,13 @@ class Config {
 		~Config();
 		void printUsage(const char* name);
 		void printConfig();
+};
+
+class App : public Config 
+{
+	public:
+		App(int count, char** values);
+		~App();
 };
 
 #endif /* __CLASSES_H */
