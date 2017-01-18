@@ -20,6 +20,13 @@ int main(int argc, char** argv)
 
 App::App(int count, char** values) : Config(count, values)
 {
+	char** w = &watch[0];
+	/*
+	for (int i = 0; w[i]; ++i)
+	{
+		cout << "W:" << w[i] << endl;
+	}
+	*/
 }
 
 App::~App()
@@ -69,7 +76,7 @@ Config::Config(int count, char** values)
 				enable_supressor = true;
 				break;
 			case 'w':
-				watch.push_back(optarg);
+				watch.push_back(strdup(optarg));
 				break;
 			case 'h':
 				printUsage(values[0]);
@@ -78,6 +85,7 @@ Config::Config(int count, char** values)
 				break;
 		}
 	}
+	watch.push_back(NULL);
 }
 
 Config::~Config()

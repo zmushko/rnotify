@@ -9,7 +9,7 @@ class Config
 		int verbose;
 		string pid;
 		bool no_demon;
-		vector <string> watch;
+		vector <char*> watch;
 		string path_to_scripts;
 		string exclude;
 		int heartbeat;
