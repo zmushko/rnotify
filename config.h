@@ -3,12 +3,28 @@
 
 #include <vector>
 
-class Config 
+class Config
 {
+	public:
+			Config(int count, char** values);
+			~Config();
+		string	getMyName();
+		bool	getNeedHelp();
+		bool	getCatchRename();
+		int	getMask();
+		bool	getEnableSuppressor();
+		bool	getSkipZeroFile();
+		int	getHearbeat();
+		string	getExclude();
+		string	getPathToScripts();
+		bool	getNoDemon();
+		string	getPidfilePath();
+		int	getVerbose();
+			
 	private:
 		vector <char*> m_watch;
 		int	m_verbose;
-		string	m_pid;
+		string	m_pidfile_path;
 		bool	m_no_demon;
 		string	m_path_to_scripts;
 		string	m_exclude;
@@ -16,15 +32,12 @@ class Config
 		bool	m_skip_zero_file;
 		bool	m_enable_supressor;
 		int	m_mask;
-		bool	m_in_rename;
-	public:
-			Config(int count, char** values);
-			~Config();
-		void	printUsage(const char* name);
-	private:
+		bool	m_catch_rename;
+		bool	m_need_help;
+		string	m_my_name;
+		
+		void	readOpts(int count, char** values);
 		void	readMask();
 };
 
 #endif /* __CONFIG_H */
-
-

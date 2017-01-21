@@ -10,13 +10,16 @@
 using namespace std;
 
 #include "config.h"
+#include "app.h"
 
 int main(int argc, char** argv)
 {
-	Config* conf = new Config(argc, argv);
+	Config*	conf	= new Config(argc, argv);
+	
+	App app(conf);
+	app.run();
 
 	delete conf;
-
 	return 0;
 }
 

@@ -1,7 +1,8 @@
 all : librnotify
 	cd librnotify && make all 
 	g++ -g -c config.cpp 
-	g++ -g -o rnotifyd main.cpp config.o 
+	g++ -g -c app.cpp 
+	g++ -g -o rnotifyd main.cpp config.o app.o
 
 librnotify : 
 	git clone https://github.com/zmushko/librnotify.git
