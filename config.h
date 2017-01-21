@@ -1,5 +1,5 @@
-#ifndef __CLASSES_H
-#define __CLASSES_H
+#ifndef __CONFIG_H
+#define __CONFIG_H
 
 #include <vector>
 
@@ -21,19 +21,10 @@ class Config
 			Config(int count, char** values);
 			~Config();
 		void	printUsage(const char* name);
-		//void	printConfig();
 	private:
 		void	readMask();
 };
 
-/*
-class App : public Config 
-{
-	public:
-		App(int count, char** values);
-		~App();
-};
-*/
+#endif /* __CONFIG_H */
 
-#endif /* __CLASSES_H */
 
