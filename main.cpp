@@ -1,4 +1,5 @@
 #include <iostream>
+#include <exception>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,12 +15,17 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	Config*	conf	= new Config(argc, argv);
-	
-	App app(conf);
-	app.run();
+	Config	conf(argc, argv);
+	try
+	{
+		App app(&conf);
+		app.run();
+	}
+	catch(exception const& e)
+	{
+		cout << "ERROR exception: " << e.what() << endl;
+	}
 
-	delete conf;
 	return 0;
 }
 

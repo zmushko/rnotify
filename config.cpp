@@ -9,6 +9,7 @@
 
 using namespace std;
 
+#include "log.h"
 #include "config.h"
 
 Config::Config(int count, char** values) : 
@@ -25,12 +26,18 @@ Config::Config(int count, char** values) :
 	m_need_help(false),
 	m_my_name(values[0])
 {	
+	m_log << "string=" << "123" << m_log.end;
 	readOpts(count, values);
 	readMask();
 }
 
 Config::~Config()
 {
+	vector <char*> :: iterator itr;
+	for (itr = m_watch.begin(); itr != m_watch.end(); ++itr)
+	{
+		delete *itr;
+	}
 }
 
 string Config::getMyName()

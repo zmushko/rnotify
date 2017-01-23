@@ -3,11 +3,14 @@
 
 #include <vector>
 
+#include "log.h" 
+
 class Config
 {
 	public:
-			Config(int count, char** values);
-			~Config();
+		Config(int count, char** values);
+		~Config();
+		
 		string	getMyName();
 		bool	getNeedHelp();
 		bool	getCatchRename();
@@ -20,9 +23,11 @@ class Config
 		bool	getNoDemon();
 		string	getPidfilePath();
 		int	getVerbose();
-			
+		
+		Log	m_log;
+		
 	private:
-		vector <char*> m_watch;
+		vector	<char*> m_watch;
 		int	m_verbose;
 		string	m_pidfile_path;
 		bool	m_no_demon;

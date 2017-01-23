@@ -6,11 +6,13 @@
 class App 
 {
 	private:
+		Log	log;
 		Config*	m_conf;
 		void	printUsage();
 	public:
-			App(Config* conf);
-			~App();
+		App(Config* conf);
+		~App();
+		
 		void	run();
 };
 

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <exception>
 
 using namespace std;
 
@@ -7,7 +8,7 @@ using namespace std;
 
 App::App(Config* conf)
 {
-	m_conf = conf;
+	m_conf	= conf;
 }
 
 App::~App()
