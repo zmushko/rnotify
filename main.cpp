@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 {
 	try
 	{
-		App app(argc, argv);
+		Demon demon(argc, argv);
 	}
 	catch(exception const& e)
 	{
