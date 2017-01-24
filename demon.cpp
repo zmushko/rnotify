@@ -6,17 +6,9 @@ using namespace std;
 #include "config.h"
 #include "app.h"
 
-App::App(Config* conf)
+Demon::Demon(int count, char** values)
 {
-	m_conf	= conf;
-}
-
-App::~App()
-{
-}
-
-void App::run()
-{
+	m_conf	= new Config(count, values);
 	if (m_conf->getNeedHelp())
 	{
 		printUsage();
@@ -24,7 +16,11 @@ void App::run()
 	}
 }
 
-void App::printUsage()
+Demon::~Demon()
+{
+}
+
+void Demon::printUsage()
 {
 	cout << endl 
 		<< "Usage: " << m_conf->getMyName() << " [-options] [-w path1 -w path2 ...]" << endl 

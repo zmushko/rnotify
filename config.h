@@ -24,8 +24,6 @@ class Config
 		string	getPidfilePath();
 		int	getVerbose();
 		
-		Log	m_log;
-		
 	private:
 		vector	<char*> m_watch;
 		int	m_verbose;

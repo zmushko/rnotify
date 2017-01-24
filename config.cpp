@@ -26,7 +26,6 @@ Config::Config(int count, char** values) :
 	m_need_help(false),
 	m_my_name(values[0])
 {	
-	m_log << "string=" << "123" << m_log.end;
 	readOpts(count, values);
 	readMask();
 }

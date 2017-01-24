@@ -15,17 +15,15 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	Config	conf(argc, argv);
 	try
 	{
-		App app(&conf);
-		app.run();
+		App app(argc, argv);
 	}
 	catch(exception const& e)
 	{
 		cout << "ERROR exception: " << e.what() << endl;
 	}
-
+	
 	return 0;
 }
 

@@ -3,17 +3,17 @@
 
 #include "config.h"
 
-class App 
+class Demon 
 {
 	private:
-		Log	log;
+		Log*	log;
 		Config*	m_conf;
+		
 		void	printUsage();
 	public:
-		App(Config* conf);
-		~App();
+		App(int count, char** values);
+		~App();		
 		
-		void	run();
 };
 
 
