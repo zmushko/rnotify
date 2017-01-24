@@ -11,8 +11,8 @@ class Demon
 		
 		void	printUsage();
 	public:
-		App(int count, char** values);
-		~App();		
+		Demon(int count, char** values);
+		~Demon();		
 		
 };
 

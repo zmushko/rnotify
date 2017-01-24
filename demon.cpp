@@ -4,7 +4,7 @@
 using namespace std;
 
 #include "config.h"
-#include "app.h"
+#include "demon.h"
 
 Demon::Demon(int count, char** values)
 {
@@ -18,6 +18,7 @@ Demon::Demon(int count, char** values)
 
 Demon::~Demon()
 {
+	delete m_conf;
 }
 
 void Demon::printUsage()

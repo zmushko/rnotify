@@ -11,7 +11,7 @@
 using namespace std;
 
 #include "config.h"
-#include "app.h"
+#include "demon.h"
 
 int main(int argc, char** argv)
 {
