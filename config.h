@@ -20,12 +20,14 @@ class Config
 		string	getPathToScripts();
 		bool	getNoDemon();
 		string	getPidfilePath();
+		string	getLogfilePath();
 		int	getVerbose();
 		
 	private:
 		vector	<char*> m_watch;
 		int	m_verbose;
 		string	m_pidfile_path;
+		string	m_logfile_path;
 		bool	m_no_demon;
 		string	m_path_to_scripts;
 		string	m_exclude;

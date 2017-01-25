@@ -15,6 +15,7 @@ using namespace std;
 Config::Config(int count, char** values) : 
 	m_verbose(0), 
 	m_pidfile_path("/var/run"),
+	m_logfile_path(""),
 	m_no_demon(false),
 	m_path_to_scripts("/etc/rnotifyd"),
 	m_exclude(""),
@@ -82,6 +83,11 @@ string Config::getPathToScripts()
 string Config::getPidfilePath()
 {
 	return m_pidfile_path;
+}
+
+string Config::getLogfilePath()
+{
+	return m_logfile_path;
 }
 
 int Config::getMask()
@@ -210,7 +216,7 @@ void Config::readMask()
 
 void Config::readOpts(int count, char** values)
 {
-	const char* opts	= "v:p:dhw:s:e:t:zu";
+	const char* opts	= "v:p:l:dhw:s:e:t:zu";
 	char opt		= 0;
 
 	while (-1 != (opt = getopt(count, values, opts)))
@@ -222,6 +228,9 @@ void Config::readOpts(int count, char** values)
 				break;
 			case 'p':
 				m_pidfile_path = optarg;
+				break;
+			case 'l':
+				m_logfile_path = optarg;
 				break;
 			case 'd':
 				m_no_demon = true;
@@ -255,4 +264,6 @@ void Config::readOpts(int count, char** values)
 
 	Log& log = Log::Instance();
 	log.setVerboseLevel(m_verbose);
+	log.setEnableConsole(m_no_demon);
+	log.setLogfilePath(m_logfile_path);
 }
