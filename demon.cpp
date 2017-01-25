@@ -1,5 +1,6 @@
 #include <iostream>
 #include <exception>
+#include <stdexcept>
 
 using namespace std;
 
@@ -8,23 +9,28 @@ using namespace std;
 
 Demon::Demon(int count, char** values)
 {
-	m_conf	= new Config(count, values);
-	if (m_conf->getNeedHelp())
+	conf = new Config(count, values);
+	
+	if (conf->getNeedHelp())
 	{
 		printUsage();
 		return;
 	}
+
+	//throw runtime_error("wwwwwwwwwwww");
+
+	//error << "!!!!!!!!!!!!!!!!!!" << error.end;
 }
 
 Demon::~Demon()
 {
-	delete m_conf;
+	delete conf;
 }
 
 void Demon::printUsage()
 {
 	cout << endl 
-		<< "Usage: " << m_conf->getMyName() << " [-options] [-w path1 -w path2 ...]" << endl 
+		<< "Usage: " << conf->getMyName() << " [-options] [-w path1 -w path2 ...]" << endl 
 		<< "\twhere: path1, path2, ... - path to notified folders" << endl
 		<< endl
 		<< "Options:" << endl 

@@ -252,4 +252,7 @@ void Config::readOpts(int count, char** values)
 		}
 	}
 	m_watch.push_back(NULL);
+
+	Log& log = Log::Instance();
+	log.setVerboseLevel(m_verbose);
 }

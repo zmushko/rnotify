@@ -3,8 +3,6 @@
 
 #include <vector>
 
-#include "log.h" 
-
 class Config
 {
 	public:

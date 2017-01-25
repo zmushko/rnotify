@@ -10,14 +10,18 @@
 
 using namespace std;
 
+#include "log.h"
 #include "config.h"
 #include "demon.h"
 
 int main(int argc, char** argv)
 {
+	Debug	debug;
+	
 	try
 	{
 		Demon demon(argc, argv);
+		debug << "Hello" << " world!!!" << debug.end;
 	}
 	catch(exception const& e)
 	{
