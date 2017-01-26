@@ -13,7 +13,7 @@ using namespace std;
 #include "config.h"
 
 Config::Config(int count, char** values) : 
-	m_verbose(0), 
+	m_verbose(2), 
 	m_pidfile_path("/var/run"),
 	m_logfile_path(""),
 	m_no_demon(false),

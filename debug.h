@@ -8,10 +8,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
+#include <execinfo.h>
 
 using namespace std;
 
-#define WHERE __FILE__ << ":" << __LINE__
+#define WHERE	__FILE__ << ":" << __LINE__ << ":"
+#define WHERE__	__FILE__, __LINE__,
 
 class Logger
 {
@@ -91,7 +93,7 @@ class Logger
 				
 				if (verbose != TRACE)
 				{
-					out_msg << verboseToString(verbose) << ' ';
+					out_msg << verboseToString(verbose) << ':';
 				}
 				out_msg << message;
 
@@ -113,11 +115,29 @@ class Logger
 					out_msg << "'";
 				}
 				
+				if (verbose <= FATAL)
+				{
+					void* array[100];
+					size_t size = backtrace (array, 100);
+					char** strings = backtrace_symbols (array, size);
+					if (strings)
+					{
+						out_msg << endl << "Obtained " << size << " stack frames:" << endl;
+
+						for (size_t i = 0; i < size; ++i)
+						{
+							out_msg << strings[i] << endl;
+						}
+						delete strings;			
+					}
+				}
+
+				
 				if (verbose <= ERROR && !conf_console)
 				{
 					cerr << out_msg.str() << endl;
 				}
-				else
+				else if (conf_console)
 				{
 					cout << out_msg.str() << endl;
 				}
@@ -141,6 +161,7 @@ class Logger
 					m_fstream << out_msg.str() << endl;
 					m_fstream.flush();
 				}
+
 				syslog(verboseToInt(verbose), "%s", out_msg.str().c_str());
 			}
 		}
@@ -195,6 +216,15 @@ class Debug
 		}
 };
 
+class Fatal : public Debug
+{
+	public:
+		Fatal() : Debug()
+		{
+			verbose = Logger::FATAL;
+		}
+};
+
 class Error : public Debug
 {
 	private:
@@ -233,14 +263,20 @@ class Trace : public Debug
 		}
 };
 
-class Exception 
+class Exception
 {
 	private:
 		string error;
 	public:
-		Exception(string e)
+		Exception(string e) : error(e)
 		{
-			error = e;
+		}
+		
+		Exception(const char* file, int line, string e)
+		{
+			ostringstream message;
+			message << file << ":" << line << ":" << e;
+			error = message.str();
 		}
 		
 		string What()

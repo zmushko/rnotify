@@ -16,10 +16,10 @@ Demon::Demon(int count, char** values)
 		printUsage();
 		return;
 	}
+	
+	debug << WHERE << "debug" << endl;
 
-	//Error("wwwwwwwwwwww");
-
-	//throw Error("wwwwwwwwwwww");
+	throw Exception(WHERE__"Something wrong!");
 }
 
 Demon::~Demon()
@@ -34,7 +34,7 @@ void Demon::printUsage()
 		<< "\twhere: path1, path2, ... - path to notified folders" << endl
 		<< endl
 		<< "Options:" << endl 
-		<< "\t-v [verbose level 0-7] default: 0, the possible value for the verbose are:" << endl
+		<< "\t-v [verbose level 0-7] default: 2, the possible value for the verbose are:" << endl
 		<< Debug::Legenda("\t   ") << endl
 		<< "\t-p [path to pid file] default: /var/run" << endl
 		<< "\t-l [path to log file] by default syslog only used" << endl

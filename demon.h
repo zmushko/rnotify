@@ -7,7 +7,6 @@
 class Demon 
 {
 	private:
-		Error	error;
 		Debug	debug;	
 		Config*	conf;
 		void	printUsage();
