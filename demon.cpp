@@ -17,7 +17,9 @@ Demon::Demon(int count, char** values)
 		return;
 	}
 
-	//throw runtime_error("wwwwwwwwwwww");
+	//Error("wwwwwwwwwwww");
+
+	//throw Error("wwwwwwwwwwww");
 }
 
 Demon::~Demon()

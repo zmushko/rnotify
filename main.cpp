@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#include "log.h"
+#include "debug.h"
 #include "config.h"
 #include "demon.h"
 
@@ -18,11 +18,17 @@ int main(int argc, char** argv)
 {
 	try
 	{
+		Error error;
 		Demon demon(argc, argv);
+		error << "The End" << endl;
 	}
 	catch(exception const& e)
 	{
 		cout << "ERROR exception: " << e.what() << endl;
+	}
+	catch(Exception& e)
+	{
+		cout << "ERROR Error: " << e.What() << endl;
 	}
 	
 	return 0;

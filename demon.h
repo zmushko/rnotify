@@ -1,7 +1,7 @@
 #ifndef __APP_H
 #define __APP_H
 
-#include "log.h"
+#include "debug.h"
 #include "config.h"
 
 class Demon 
@@ -9,9 +9,7 @@ class Demon
 	private:
 		Error	error;
 		Debug	debug;	
-
 		Config*	conf;
-	
 		void	printUsage();
 	public:
 		Demon(int count, char** values);

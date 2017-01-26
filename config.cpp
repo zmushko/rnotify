@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#include "log.h"
+#include "debug.h"
 #include "config.h"
 
 Config::Config(int count, char** values) : 
@@ -262,8 +262,5 @@ void Config::readOpts(int count, char** values)
 	}
 	m_watch.push_back(NULL);
 
-	Log& log = Log::Instance();
-	log.setVerboseLevel(m_verbose);
-	log.setEnableConsole(m_no_demon);
-	log.setLogfilePath(m_logfile_path);
+	m_debug.Init(m_verbose, m_no_demon, m_logfile_path);
 }

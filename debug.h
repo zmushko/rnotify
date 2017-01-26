@@ -16,22 +16,22 @@ using namespace std;
 class Log
 {
 	private:
-		Log() : log_verbose(0), log_console(false), log_file("")
+		Log() : conf_verbose(0), conf_console(false), conf_pathfile("")
 		{
 		}
 
 		~Log()
 		{
-			log_fstream.close();
+			m_fstream.close();
 		}
 
 		Log(const Log&);
 		Log& operator =(const Log&);
 
-		int	 log_verbose;
-		bool	 log_console;
-		string	 log_file;
-		ofstream log_fstream;
+		int	 conf_verbose;
+		bool	 conf_console;
+		string	 conf_pathfile;
+		ofstream m_fstream;
 		
 		string verboseToString(int verbose)
 		{
@@ -68,23 +68,23 @@ class Log
 		
 		void setEnableConsole(bool flag)
 		{
-			log_console = flag;
+			conf_console = flag;
 		}
 
 		void setLogfilePath(string path)
 		{
-			log_file = path;
-			log_fstream.open(path.c_str());
+			conf_pathfile = path;
+			m_fstream.open(path.c_str(), ios_base::app);
 		}
 		
 		void setVerboseLevel(int level)
 		{
-			log_verbose = level;
+			conf_verbose = level;
 		}
 		
 		void printMessage(string message, int verbose, int safe_errno)
 		{
-			if (verbose <= log_verbose)
+			if (verbose <= conf_verbose)
 			{
 				ostringstream out_msg;
 				
@@ -112,14 +112,14 @@ class Log
 						}
 						out_msg << "'";
 					}
-					(log_console ? cout : cerr) << out_msg.str() << endl;
+					(conf_console ? cout : cerr) << out_msg.str() << endl;
 				}
-				else if (log_console)
+				else if (conf_console)
 				{
 					cout << out_msg.str() << endl;
 				}
 
-				if (log_fstream.is_open())
+				if (m_fstream.is_open())
 				{
 					if (verbose != TRACE)
 					{
@@ -131,10 +131,10 @@ class Log
 						{
 							strftime(datetime, sizeof(datetime), "%b %e %Y %H:%M:%S", tmp);
 						}
-						log_fstream << datetime << ' ';
+						m_fstream << datetime << ' ';
 					}
-					log_fstream << out_msg.str() << endl;
-					log_fstream.flush();
+					m_fstream << out_msg.str() << endl;
+					m_fstream.flush();
 				}
 				syslog(verboseToInt(verbose), "%s", out_msg.str().c_str());
 			}
@@ -166,7 +166,15 @@ class Debug
 		{
 			verbose = Log::DEBUG;
 		}
-		
+
+		void Init(int verbose, bool console, string path)
+		{
+			Log& log = Log::Instance();
+			log.setVerboseLevel(verbose);
+			log.setEnableConsole(console);
+			log.setLogfilePath(path);
+		}
+
 		template <class Type> Debug& operator <<(Type msg)
 		{
 			message << msg;
@@ -183,6 +191,8 @@ class Debug
 
 class Error : public Debug
 {
+	private:
+		string error;
 	public:
 		Error() : Debug()
 		{
@@ -214,6 +224,22 @@ class Trace : public Debug
 		Trace() : Debug()
 		{
 			verbose = Log::TRACE;
+		}
+};
+
+class Exception 
+{
+	private:
+		string error;
+	public:
+		Exception(string e)
+		{
+			error = e;
+		}
+		
+		string What()
+		{
+			return error;
 		}
 };
 
