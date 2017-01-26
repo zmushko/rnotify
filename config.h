@@ -25,7 +25,6 @@ class Config
 		int	getVerbose();
 		
 	private:
-		Debug	m_debug;
 		vector	<char*> m_watch;
 		int	m_verbose;
 		string	m_pidfile_path;

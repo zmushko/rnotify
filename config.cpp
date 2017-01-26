@@ -262,5 +262,5 @@ void Config::readOpts(int count, char** values)
 	}
 	m_watch.push_back(NULL);
 
-	m_debug.Init(m_verbose, m_no_demon, m_logfile_path);
+	Debug::Init(m_verbose, m_no_demon, m_logfile_path);
 }

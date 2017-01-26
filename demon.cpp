@@ -29,15 +29,13 @@ Demon::~Demon()
 
 void Demon::printUsage()
 {
-	Log& log = Log::Instance(); 
-
 	cout << endl 
 		<< "Usage: " << conf->getMyName() << " [-options] [-w path1 -w path2 ...]" << endl 
 		<< "\twhere: path1, path2, ... - path to notified folders" << endl
 		<< endl
 		<< "Options:" << endl 
 		<< "\t-v [verbose level 0-7] default: 0, the possible value for the verbose are:" << endl
-		<< log.printLegenda("\t   ") << endl
+		<< Debug::Legenda("\t   ") << endl
 		<< "\t-p [path to pid file] default: /var/run" << endl
 		<< "\t-l [path to log file] by default syslog only used" << endl
 		<< "\t-s [path to executible scripts per notifications], default: /etc/rnotifyd " << endl

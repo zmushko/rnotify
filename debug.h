@@ -13,20 +13,20 @@ using namespace std;
 
 #define WHERE __FILE__ << ":" << __LINE__
 
-class Log
+class Logger
 {
 	private:
-		Log() : conf_verbose(0), conf_console(false), conf_pathfile("")
+		Logger() : conf_verbose(0), conf_console(false), conf_pathfile("")
 		{
 		}
 
-		~Log()
+		~Logger()
 		{
 			m_fstream.close();
 		}
 
-		Log(const Log&);
-		Log& operator =(const Log&);
+		Logger(const Logger&);
+		Logger& operator =(const Logger&);
 
 		int	 conf_verbose;
 		bool	 conf_console;
@@ -60,9 +60,9 @@ class Log
 	public:	
 		enum {UNKNOWN = 0, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL};
 
-		static Log& Instance()
+		static Logger& Instance()
 		{
-			static Log theSingleTone;
+			static Logger theSingleTone;
 			return theSingleTone;
 		}
 		
@@ -71,7 +71,7 @@ class Log
 			conf_console = flag;
 		}
 
-		void setLogfilePath(string path)
+		void setLoggerfilePath(string path)
 		{
 			conf_pathfile = path;
 			m_fstream.open(path.c_str(), ios_base::app);
@@ -82,10 +82,11 @@ class Log
 			conf_verbose = level;
 		}
 		
-		void printMessage(string message, int verbose, int safe_errno)
+		void printMessage(string message, int verbose)
 		{
 			if (verbose <= conf_verbose)
 			{
+				int safe_errno = errno;
 				ostringstream out_msg;
 				
 				if (verbose != TRACE)
@@ -94,30 +95,34 @@ class Log
 				}
 				out_msg << message;
 
-				if (verbose == ERROR || verbose == FATAL || verbose == UNKNOWN)
+				if (verbose <= FATAL && safe_errno)
 				{
-					if (safe_errno)
+					out_msg << " errno:'";
+		
+					char error_buf[256] = {'\0', };
+					if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE)
 					{
-						char error_buf[256] = {'\0', };
-						out_msg << " errno:'";
-						
-						if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE)
-						{
-							strerror_r(safe_errno, error_buf, 256);
-							out_msg << error_buf;
-						}
-						else
-						{
-							out_msg << strerror_r(safe_errno, error_buf, 256);
-						}
-						out_msg << "'";
+						strerror_r(safe_errno, error_buf, 256);
+						out_msg << error_buf;
 					}
-					(conf_console ? cout : cerr) << out_msg.str() << endl;
+					else
+					{
+						out_msg << strerror_r(safe_errno, error_buf, 256);
+					}
+
+					out_msg << "'";
 				}
-				else if (conf_console)
+				
+				if (verbose <= ERROR && !conf_console)
+				{
+					cerr << out_msg.str() << endl;
+				}
+				else
 				{
 					cout << out_msg.str() << endl;
 				}
+
+				errno = safe_errno;
 
 				if (m_fstream.is_open())
 				{
@@ -140,7 +145,7 @@ class Log
 			}
 		}
 		
-		const string printLegenda(string const& prefix)
+		string printLegenda(string const& prefix)
 		{
 			ostringstream legenda;
 			legenda << prefix << "0 - An unknown messages that should always be logged." << endl 
@@ -164,15 +169,7 @@ class Debug
 	public:
 		Debug() : message("")
 		{
-			verbose = Log::DEBUG;
-		}
-
-		void Init(int verbose, bool console, string path)
-		{
-			Log& log = Log::Instance();
-			log.setVerboseLevel(verbose);
-			log.setEnableConsole(console);
-			log.setLogfilePath(path);
+			verbose = Logger::DEBUG;
 		}
 
 		template <class Type> Debug& operator <<(Type msg)
@@ -182,10 +179,19 @@ class Debug
 
 		void operator <<(ostream& (*f)(ostream&))
 		{
-			int safe_errno = errno;
-			Log& log = Log::Instance(); 
-			log.printMessage(message.str(), verbose, safe_errno);
-			errno = safe_errno;
+			Logger::Instance().printMessage(message.str(), verbose);
+		}
+		
+		static string Legenda(string const& prefix)
+		{
+			return Logger::Instance().printLegenda(prefix);
+		}
+		
+		static void Init(int verbose, bool console, string path)
+		{
+			Logger::Instance().setVerboseLevel(verbose);
+			Logger::Instance().setEnableConsole(console);
+			Logger::Instance().setLoggerfilePath(path);
 		}
 };
 
@@ -196,7 +202,7 @@ class Error : public Debug
 	public:
 		Error() : Debug()
 		{
-			verbose = Log::ERROR;
+			verbose = Logger::ERROR;
 		}
 };
 
@@ -205,7 +211,7 @@ class Info : public Debug
 	public:
 		Info() : Debug()
 		{
-			verbose = Log::INFO;
+			verbose = Logger::INFO;
 		}
 };
 
@@ -214,7 +220,7 @@ class Warning : public Debug
 	public:
 		Warning() : Debug()
 		{
-			verbose = Log::WARN;
+			verbose = Logger::WARN;
 		}
 };
 
@@ -223,7 +229,7 @@ class Trace : public Debug
 	public:
 		Trace() : Debug()
 		{
-			verbose = Log::TRACE;
+			verbose = Logger::TRACE;
 		}
 };
 
