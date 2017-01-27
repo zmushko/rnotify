@@ -97,7 +97,7 @@ class Logger
 				}
 				out_msg << message;
 
-				if (verbose <= FATAL && safe_errno)
+				if (verbose >= INFO && safe_errno)
 				{
 					out_msg << " errno:'";
 		
@@ -114,8 +114,9 @@ class Logger
 
 					out_msg << "'";
 				}
+				errno = safe_errno;
 				
-				if (verbose <= FATAL)
+				if (verbose >= ALL)
 				{
 					void* array[100];
 					size_t size = backtrace (array, 100);
@@ -132,7 +133,6 @@ class Logger
 					}
 				}
 
-				
 				if (verbose <= ERROR && !conf_console)
 				{
 					cerr << out_msg.str() << endl;
@@ -141,8 +141,6 @@ class Logger
 				{
 					cout << out_msg.str() << endl;
 				}
-
-				errno = safe_errno;
 
 				if (m_fstream.is_open())
 				{
@@ -158,6 +156,7 @@ class Logger
 						}
 						m_fstream << datetime << ' ';
 					}
+
 					m_fstream << out_msg.str() << endl;
 					m_fstream.flush();
 				}
@@ -175,7 +174,7 @@ class Logger
 				<< prefix << "3 - A warnings." << endl
 				<< prefix << "4 - Generic (useful) information about system operation." << endl
 				<< prefix << "5 - Low-level information for developers." << endl
-				<< prefix << "6 - Tracing information for developers." << endl
+				<< prefix << "6 - Tracing information(omit data and time in log file)." << endl
 				<< prefix << "7 - Raw information for developers.";
 
 			return legenda.str();

@@ -16,16 +16,15 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	Error error;
+	Fatal error;
 
 	try
 	{
 		Demon demon(argc, argv);
-		//char* o = new char[-1]; 
 	}
 	catch(exception const& e)
 	{
-		error << "STD exception:" << e.what() << endl;
+		error << e.what() << endl;
 	}
 	catch(Exception& e)
 	{

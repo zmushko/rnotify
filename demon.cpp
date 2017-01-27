@@ -18,8 +18,6 @@ Demon::Demon(int count, char** values)
 	}
 	
 	debug << WHERE << "debug" << endl;
-
-	throw Exception(WHERE__"Something wrong!");
 }
 
 Demon::~Demon()
