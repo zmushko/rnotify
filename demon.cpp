@@ -10,14 +10,14 @@ using namespace std;
 Demon::Demon(int count, char** values)
 {
 	conf = new Config(count, values);
+		
+	debug << WHERE << "debug" << endl;
 	
 	if (conf->getNeedHelp())
 	{
 		printUsage();
 		return;
 	}
-	
-	debug << WHERE << "debug" << endl;
 }
 
 Demon::~Demon()

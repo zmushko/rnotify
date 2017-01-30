@@ -114,8 +114,6 @@ void Config::readMask()
 		return;
 	}
 
-		char* o = new char[-1]; 
-
 	DIR* dp	= opendir(m_path_to_scripts.c_str());
 	if (dp == NULL)
 	{

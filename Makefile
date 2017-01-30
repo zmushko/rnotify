@@ -3,9 +3,10 @@ CFLAGS = -g -rdynamic
 
 all : librnotify
 	cd librnotify && make all 
+	$(CC) ${CFLAGS} -c debug.cpp 
 	$(CC) ${CFLAGS} -c config.cpp 
 	$(CC) ${CFLAGS} -c demon.cpp 
-	$(CC) ${CFLAGS} -o rnotifyd main.cpp config.o demon.o
+	$(CC) ${CFLAGS} -o rnotifyd main.cpp config.o demon.o debug.o
 
 librnotify : 
 	git clone https://github.com/zmushko/librnotify.git
