@@ -22,9 +22,9 @@ namespace Logging
 		conf_console = flag;
 	}
 
-	void Logger::enableFile(string path)
+	void Logger::enableFile(std::string path)
 	{
-		m_fstream.open(path.c_str(), ios_base::app);
+		m_fstream.open(path.c_str(), std::ios_base::app);
 	}
 	
 	void Logger::verboseLevel(int level)
@@ -35,10 +35,12 @@ namespace Logging
 	void Logger::printMessage(Message* message)
 	{
 		int verbose = message->getVerbose();
+
 		if (verbose <= conf_verbose)
 		{
+			m_mutex.lock();
 			int safe_errno = errno;
-			ostringstream out_msg;
+			std::ostringstream out_msg;
 			
 			if (verbose != TRACE)
 			{
@@ -72,11 +74,11 @@ namespace Logging
 				char** strings = backtrace_symbols (array, size);
 				if (strings)
 				{
-					out_msg << endl << "Obtained " << size << " stack frames:" << endl;
+					out_msg << std::endl << "Obtained " << size << " stack frames:" << std::endl;
 
 					for (size_t i = 0; i < size; ++i)
 					{
-						out_msg << strings[i] << endl;
+						out_msg << strings[i] << std::endl;
 					}
 					delete strings;			
 				}
@@ -84,11 +86,11 @@ namespace Logging
 
 			if (verbose <= ERROR && !conf_console)
 			{
-				cerr << out_msg.str() << endl;
+				std::cerr << out_msg.str() << std::endl;
 			}
 			else if (conf_console)
 			{
-				cout << out_msg.str() << endl;
+				std::cout << out_msg.str() << std::endl;
 			}
 			
 			if (m_fstream.is_open())
@@ -106,30 +108,31 @@ namespace Logging
 					m_fstream << datetime << ' ';
 				}
 
-				m_fstream << out_msg.str() << endl;
+				m_fstream << out_msg.str() << std::endl;
 				m_fstream.flush();
 			}
 
 			syslog(verboseToInt(verbose), "%s", out_msg.str().c_str());
+			m_mutex.unlock();
 		}
 	}
 	
-	string Logger::printLegenda(string const& prefix)
+	std::string Logger::printLegenda(std::string const& prefix)
 	{
-		ostringstream legenda;
-		legenda << prefix << "0 - An unknown messages that should always be logged." << endl 
-			<< prefix << "1 - An unhandleable errors that results in a program crash." << endl
-			<< prefix << "2 - A handleables error condition." << endl
-			<< prefix << "3 - A warnings." << endl
-			<< prefix << "4 - Generic (useful) information about system operation." << endl
-			<< prefix << "5 - Low-level information for developers." << endl
-			<< prefix << "6 - Tracing information(omit data and time in log file)." << endl
+		std::ostringstream legenda;
+		legenda << prefix << "0 - An unknown messages that should always be logged." << std::endl 
+			<< prefix << "1 - An unhandleable errors that results in a program crash." << std::endl
+			<< prefix << "2 - A handleables error condition." << std::endl
+			<< prefix << "3 - A warnings." << std::endl
+			<< prefix << "4 - Generic (useful) information about system operation." << std::endl
+			<< prefix << "5 - Low-level information for developers." << std::endl
+			<< prefix << "6 - Tracing information(omit data and time in log file)." << std::endl
 			<< prefix << "7 - Raw information for developers.";
 
 		return legenda.str();
 	}
 
-	string Logger::verboseToString(int verbose)
+	std::string Logger::verboseToString(int verbose)
 	{
 		if	(verbose == Logger::UNKNOWN)	return "UNKNOWN";
 		else if (verbose == Logger::FATAL)	return "FATAL";
@@ -158,7 +161,7 @@ namespace Logging
 		return verbose;
 	}
 
-	string Message::getMessage()
+	std::string Message::getMessage()
 	{
 		return message.str();
 	}

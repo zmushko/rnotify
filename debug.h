@@ -4,29 +4,26 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <mutex>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <syslog.h>
 #include <execinfo.h>
 
-using namespace std;
-
 #define WHERE	__FILE__ << ":" << __LINE__ << ":"
 #define WHERE__	__FILE__, __LINE__,
-
-class Debug;
 
 namespace Logging
 {
 	class Message
 	{
 		protected:
-			ostringstream message;
+			std::ostringstream message;
 			int verbose;
 		
 		public:
-			string getMessage();
+			std::string getMessage();
 			int getVerbose();
 	};
 		
@@ -40,10 +37,11 @@ namespace Logging
 
 			int	 conf_verbose;
 			bool	 conf_console;
-			string	 conf_pathfile;
-			ofstream m_fstream;			
+			std::string	 conf_pathfile;
+			std::ofstream m_fstream;
+			std::mutex	 m_mutex;
 			
-			string verboseToString(int verbose);
+			std::string verboseToString(int verbose);
 			int verboseToInt(int verbose);
 
 		public:	
@@ -51,10 +49,10 @@ namespace Logging
 
 			static Logger& Instance();
 			void enableConsole(bool flag);
-			void enableFile(string path);
+			void enableFile(std::string path);
 			void verboseLevel(int level);
 			void printMessage(Message* message);
-			static string printLegenda(string const& prefix);
+			static std::string printLegenda(std::string const& prefix);
 	};
 
 } // namespace Logger
@@ -72,17 +70,17 @@ class Debug : public Logging::Message
 			message << msg;
 		}
 
-		void operator <<(ostream& (*f)(ostream&))
+		void operator <<(std::ostream& (*f)(std::ostream&))
 		{
 			Logging::Logger::Instance().printMessage(this);
 		}
 		
-		static string Legenda(string const& prefix)
+		static std::string Legenda(std::string const& prefix)
 		{
 			return Logging::Logger::printLegenda(prefix);
 		}
 		
-		static void Init(int verbose, bool console, string path)
+		static void Init(int verbose, bool console, std::string path)
 		{
 			Logging::Logger::Instance().verboseLevel(verbose);
 			Logging::Logger::Instance().enableConsole(console);
@@ -138,20 +136,20 @@ class Trace : public Debug
 class Exception
 {
 	private:
-		string error;
+		std::string error;
 	public:
-		Exception(string e) : error(e)
+		Exception(std::string e) : error(e)
 		{
 		}
 		
-		Exception(const char* file, int line, string e)
+		Exception(const char* file, int line, std::string e)
 		{
-			ostringstream message;
+			std::ostringstream message;
 			message << file << ":" << line << ":" << e;
 			error = message.str();
 		}
 		
-		string What()
+		std::string What()
 		{
 			return error;
 		}
