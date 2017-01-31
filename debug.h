@@ -21,10 +21,7 @@ namespace Logging
 		protected:
 			std::ostringstream message;
 			int verbose;
-		
-		public:
-			std::string getMessage() const;
-			int getVerbose() const;
+			void Print(int verbose);
 	};
 		
 	class Logger
@@ -41,18 +38,21 @@ namespace Logging
 			std::ofstream	m_fstream;
 			std::mutex	m_mutex;
 			
-			std::string verboseToString(int verbose);
-			int verboseToInt(int verbose);
-
 		public:	
 			enum {UNKNOWN = 0, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL};
 
 			static Logger& Instance();
 			void enableConsole(bool flag);
 			void enableFile(std::string const& path);
-			void verboseLevel(int level);
-			void printMessage(const Message& message);
+			void setVerboseLevel(int level);
+			int getVerboseLevel();
+			void printCerr(std::string const& message);
+			void printCout(std::string const& message);
+			void printFile(std::string const& message);
+			void printRaw(std::string const& message);
 			static std::string printLegenda(std::string const& prefix);
+			std::string verboseToString(int verbose);
+			int verboseToInt(int verbose);
 	};
 
 } // namespace Logger
@@ -60,21 +60,6 @@ namespace Logging
 class Debug : public Logging::Message
 {
 	public:
-		Debug()
-		{
-			verbose = Logging::Logger::DEBUG;
-		}
-
-		template <class Type> Debug& operator <<(Type msg)
-		{
-			message << msg;
-		}
-
-		void operator <<(std::ostream& (*f)(std::ostream&))
-		{
-			Logging::Logger::Instance().printMessage(*this);
-		}
-		
 		static std::string Legenda(std::string const& prefix)
 		{
 			return Logging::Logger::printLegenda(prefix);
@@ -82,54 +67,75 @@ class Debug : public Logging::Message
 		
 		static void Init(int verbose, bool console, std::string path)
 		{
-			Logging::Logger::Instance().verboseLevel(verbose);
+			Logging::Logger::Instance().setVerboseLevel(verbose);
 			Logging::Logger::Instance().enableConsole(console);
 			Logging::Logger::Instance().enableFile(path);
 		}
-};
 
-class Fatal : public Debug
-{
-	public:
-		Fatal() : Debug()
+		template <class Type> Debug& operator <<(Type msg)
 		{
-			verbose = Logging::Logger::FATAL;
+			message << msg;
+		}
+		
+		void operator <<(std::ostream& (*f)(std::ostream&))
+		{
+			Print(Logging::Logger::DEBUG);
 		}
 };
 
-class Error : public Debug
+class Error : public Logging::Message
 {
 	public:
-		Error() : Debug()
+		template <class Type> Error& operator <<(Type msg)
 		{
-			verbose = Logging::Logger::ERROR;
+			message << msg;
+		}
+		
+		void operator <<(std::ostream& (*f)(std::ostream&))
+		{
+			Print(Logging::Logger::ERROR);
 		}
 };
 
-class Info : public Debug
+class Info : public Logging::Message
 {
 	public:
-		Info() : Debug()
+		template <class Type> Error& operator <<(Type msg)
 		{
-			verbose = Logging::Logger::INFO;
+			message << msg;
+		}
+		
+		void operator <<(std::ostream& (*f)(std::ostream&))
+		{
+			Print(Logging::Logger::INFO);
 		}
 };
 
-class Warning : public Debug
+class Warning : public Logging::Message
 {
 	public:
-		Warning() : Debug()
+		template <class Type> Error& operator <<(Type msg)
 		{
-			verbose = Logging::Logger::WARN;
+			message << msg;
+		}
+		
+		void operator <<(std::ostream& (*f)(std::ostream&))
+		{
+			Print(Logging::Logger::WARN);
 		}
 };
 
-class Trace : public Debug
+class Trace : public Logging::Message
 {
 	public:
-		Trace() : Debug()
+		template <class Type> Error& operator <<(Type msg)
 		{
-			verbose = Logging::Logger::TRACE;
+			message << msg;
+		}
+		
+		void operator <<(std::ostream& (*f)(std::ostream&))
+		{
+			Print(Logging::Logger::TRACE);
 		}
 };
 

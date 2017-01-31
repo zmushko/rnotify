@@ -6,7 +6,7 @@ all : librnotify
 	$(CC) ${CFLAGS} -c debug.cpp 
 	$(CC) ${CFLAGS} -c config.cpp 
 	$(CC) ${CFLAGS} -c demon.cpp 
-	$(CC) ${CFLAGS} -o rnotifyd main.cpp config.o demon.o debug.o
+	$(CC) ${CFLAGS} -o rnotifyd debug.o main.cpp config.o demon.o 
 
 librnotify : 
 	git clone https://github.com/zmushko/librnotify.git

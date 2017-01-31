@@ -11,7 +11,7 @@ Demon::Demon(int count, char** values)
 {
 	conf = new Config(count, values);
 		
-	debug << WHERE << "debug" << endl;
+	debug << WHERE << "debug!!" << endl;
 	
 	if (conf->getNeedHelp())
 	{
