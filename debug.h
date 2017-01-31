@@ -15,39 +15,19 @@ using namespace std;
 #define WHERE	__FILE__ << ":" << __LINE__ << ":"
 #define WHERE__	__FILE__, __LINE__,
 
+class Debug;
+
 namespace Logging
 {
-	class LoggerStream
+	class Message
 	{
 		protected:
-			string verboseToString(int verbose);
-			int verboseToInt(int verbose);
-
-		public:
-			virtual void Print(int verbose, string message) = 0;
-	};
-	
-	class LoggerConsole : public LoggerStream
-	{
-		public:
-			void Print(int verbose, string message);
-	};
-
-	class LoggerFile : public LoggerStream
-	{
-		private:
-			ofstream file;
+			ostringstream message;
+			int verbose;
 		
 		public:
-			LoggerFile();
-			~LoggerFile();
-			void Print(int verbose, string message);
-	};
-	
-	class LoggerSyslog : public LoggerStream
-	{
-		public:
-			void Print(int verbose, string message);
+			string getMessage();
+			int getVerbose();
 	};
 		
 	class Logger
@@ -59,11 +39,13 @@ namespace Logging
 			Logger& operator =(const Logger&);
 
 			int	 conf_verbose;
+			bool	 conf_console;
+			string	 conf_pathfile;
+			ofstream m_fstream;			
 			
-			LoggerConsole	console;
-			LoggerFile	file;
-			LoggerSyslog	sysLog;
-			
+			string verboseToString(int verbose);
+			int verboseToInt(int verbose);
+
 		public:	
 			enum {UNKNOWN = 0, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL};
 
@@ -71,19 +53,16 @@ namespace Logging
 			void enableConsole(bool flag);
 			void enableFile(string path);
 			void verboseLevel(int level);
-			void printMessage(int verbose, string message);
+			void printMessage(Message* message);
 			static string printLegenda(string const& prefix);
 	};
 
 } // namespace Logger
 
-class Debug
+class Debug : public Logging::Message
 {
-	protected: 
-		ostringstream message;
-		int verbose;
 	public:
-		Debug() : message("")
+		Debug()
 		{
 			verbose = Logging::Logger::DEBUG;
 		}
@@ -95,7 +74,7 @@ class Debug
 
 		void operator <<(ostream& (*f)(ostream&))
 		{
-			Logging::Logger::Instance().printMessage(verbose, message.str());
+			Logging::Logger::Instance().printMessage(this);
 		}
 		
 		static string Legenda(string const& prefix)
@@ -122,8 +101,6 @@ class Fatal : public Debug
 
 class Error : public Debug
 {
-	private:
-		string error;
 	public:
 		Error() : Debug()
 		{

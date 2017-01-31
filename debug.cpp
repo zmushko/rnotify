@@ -2,15 +2,13 @@
 
 namespace Logging
 {
-	Logger::Logger()
+	Logger::Logger() : conf_verbose(0)
 	{
-		conf_verbose	= 0;
 	}
 
 	Logger::~Logger()
 	{
-		//m_fstream.close();
-		//delete m_fstream;
+		m_fstream.close();
 	}
 	
 	Logger& Logger::Instance()
@@ -21,37 +19,32 @@ namespace Logging
 			
 	void Logger::enableConsole(bool flag)
 	{
-
-		//conf_console = flag;
+		conf_console = flag;
 	}
 
 	void Logger::enableFile(string path)
 	{
-		//m_fstream = new LoggerFile(path);
+		m_fstream.open(path.c_str(), ios_base::app);
 	}
 	
 	void Logger::verboseLevel(int level)
 	{
 		conf_verbose = level;
 	}
-	
-	void Logger::printMessage(int verbose, string message)
+
+	void Logger::printMessage(Message* message)
 	{
+		int verbose = message->getVerbose();
 		if (verbose <= conf_verbose)
 		{
-			//console->Print(verbose, message);
-			//file->Print(verbose, message);
-			//sys_log->Print(verbose, message);
-			
-			/*
 			int safe_errno = errno;
 			ostringstream out_msg;
 			
 			if (verbose != TRACE)
 			{
-				//out_msg << verboseToString(verbose) << ':';
+				out_msg << verboseToString(verbose) << ':';
 			}
-			out_msg << message;
+			out_msg << message->getMessage();
 
 			if (verbose >= INFO && safe_errno)
 			{
@@ -116,11 +109,8 @@ namespace Logging
 				m_fstream << out_msg.str() << endl;
 				m_fstream.flush();
 			}
-			*/
 
-			//syslog(verboseToInt(verbose), "%s", out_msg.str().c_str());
-			//m_fstream.Print(verbose, message);
-			sysLog.Print(verbose, message);
+			syslog(verboseToInt(verbose), "%s", out_msg.str().c_str());
 		}
 	}
 	
@@ -139,52 +129,7 @@ namespace Logging
 		return legenda.str();
 	}
 
-	/*
-	void LoggerStreamCout::operator <<(ostream& (*f)(ostream&))
-	{
-		cout << message << endl;
-	}
-	
-	void LoggerStreamCerr::operator <<(ostream& (*f)(ostream&))
-	{
-		cerr << message << endl;
-	}
-	
-	LoggerStreamFile::LoggerStreamFile(int verbose, string path) : 
-		path(path), LoggerStream(verbose)
-	{
-		file.open(path.c_str(), ios_base::app);
-	}
-	
-	LoggerStreamFile::~LoggerStreamFile()
-	{
-		file.close();
-	}
-
-	void LoggerStreamFile::Print(int verbose, string message)
-	{
-		if (file.is_open())
-		{
-			if (verbose != Logger::TRACE)
-			{
-				char datetime[256] = {'\0', };
-				time_t t = time(NULL);
-				struct tm tms;
-				struct tm* tmp = localtime_r(&t, &tms);
-				if (tmp)
-				{
-					strftime(datetime, sizeof(datetime), "%b %e %Y %H:%M:%S", tmp);
-				}
-				file << datetime << ' ';
-			}
-
-			file << message.str() << endl;
-			file.flush();
-		}
-	}
-	*/
-
-	string LoggerStream::verboseToString(int verbose)
+	string Logger::verboseToString(int verbose)
 	{
 		if	(verbose == Logger::UNKNOWN)	return "UNKNOWN";
 		else if (verbose == Logger::FATAL)	return "FATAL";
@@ -196,7 +141,7 @@ namespace Logging
 		else if (verbose == Logger::ALL)	return "ALL";
 	}
 	
-	int LoggerStream::verboseToInt(int verbose)
+	int Logger::verboseToInt(int verbose)
 	{
 		if	(verbose == Logger::UNKNOWN)	return LOG_ALERT;
 		else if (verbose == Logger::FATAL)	return LOG_CRIT;
@@ -208,47 +153,14 @@ namespace Logging
 		else if (verbose == Logger::ALL)	return LOG_NOTICE;
 	}
 	
-	LoggerFile::LoggerFile()
+	int Message::getVerbose()
 	{
-		//file.open(path.c_str(), ios_base::app);
-	}
-	
-	LoggerFile::~LoggerFile()
-	{
-		file.close();
+		return verbose;
 	}
 
-	void LoggerFile::Print(int verbose, string message)
+	string Message::getMessage()
 	{
-		/*
-		if (m_file.is_open())
-		{
-			if (verbose != Logger::TRACE)
-			{
-				char datetime[256] = {'\0', };
-				time_t t = time(NULL);
-				struct tm tms;
-				struct tm* tmp = localtime_r(&t, &tms);
-				if (tmp)
-				{
-					strftime(datetime, sizeof(datetime), "%b %e %Y %H:%M:%S", tmp);
-				}
-				m_file << datetime << ' ';
-			}
-
-			m_file << message << endl;
-			m_file.flush();
-		}
-		*/
-	}
-	
-	void LoggerSyslog::Print(int verbose, string message)
-	{
-		syslog(verboseToInt(verbose), "%s", message.c_str());
-	}
-	
-	void LoggerConsole::Print(int verbose, string message)
-	{
+		return message.str();
 	}
 
 } 
