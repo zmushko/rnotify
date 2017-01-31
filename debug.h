@@ -12,7 +12,7 @@
 #include <execinfo.h>
 
 #define WHERE	__FILE__ << ":" << __LINE__ << ":"
-#define WHERE__	__FILE__, __LINE__,
+#define EXEPTION	__FILE__, __LINE__,
 
 namespace Logging
 {
@@ -23,8 +23,8 @@ namespace Logging
 			int verbose;
 		
 		public:
-			std::string getMessage();
-			int getVerbose();
+			std::string getMessage() const;
+			int getVerbose() const;
 	};
 		
 	class Logger
@@ -35,11 +35,11 @@ namespace Logging
 			Logger(const Logger&);
 			Logger& operator =(const Logger&);
 
-			int	 conf_verbose;
-			bool	 conf_console;
-			std::string	 conf_pathfile;
-			std::ofstream m_fstream;
-			std::mutex	 m_mutex;
+			int	conf_verbose;
+			bool	conf_console;
+			std::string	conf_pathfile;
+			std::ofstream	m_fstream;
+			std::mutex	m_mutex;
 			
 			std::string verboseToString(int verbose);
 			int verboseToInt(int verbose);
@@ -49,9 +49,9 @@ namespace Logging
 
 			static Logger& Instance();
 			void enableConsole(bool flag);
-			void enableFile(std::string path);
+			void enableFile(std::string const& path);
 			void verboseLevel(int level);
-			void printMessage(Message* message);
+			void printMessage(const Message& message);
 			static std::string printLegenda(std::string const& prefix);
 	};
 
@@ -72,7 +72,7 @@ class Debug : public Logging::Message
 
 		void operator <<(std::ostream& (*f)(std::ostream&))
 		{
-			Logging::Logger::Instance().printMessage(this);
+			Logging::Logger::Instance().printMessage(*this);
 		}
 		
 		static std::string Legenda(std::string const& prefix)

@@ -22,7 +22,7 @@ namespace Logging
 		conf_console = flag;
 	}
 
-	void Logger::enableFile(std::string path)
+	void Logger::enableFile(std::string const& path)
 	{
 		m_fstream.open(path.c_str(), std::ios_base::app);
 	}
@@ -32,13 +32,12 @@ namespace Logging
 		conf_verbose = level;
 	}
 
-	void Logger::printMessage(Message* message)
+	void Logger::printMessage(const Message& message)
 	{
-		int verbose = message->getVerbose();
+		int verbose = message.getVerbose();
 
 		if (verbose <= conf_verbose)
 		{
-			m_mutex.lock();
 			int safe_errno = errno;
 			std::ostringstream out_msg;
 			
@@ -46,7 +45,7 @@ namespace Logging
 			{
 				out_msg << verboseToString(verbose) << ':';
 			}
-			out_msg << message->getMessage();
+			out_msg << message.getMessage();
 
 			if (verbose >= INFO && safe_errno)
 			{
@@ -84,6 +83,7 @@ namespace Logging
 				}
 			}
 
+			m_mutex.lock();
 			if (verbose <= ERROR && !conf_console)
 			{
 				std::cerr << out_msg.str() << std::endl;
@@ -111,9 +111,9 @@ namespace Logging
 				m_fstream << out_msg.str() << std::endl;
 				m_fstream.flush();
 			}
+			m_mutex.unlock();
 
 			syslog(verboseToInt(verbose), "%s", out_msg.str().c_str());
-			m_mutex.unlock();
 		}
 	}
 	
@@ -156,12 +156,12 @@ namespace Logging
 		else if (verbose == Logger::ALL)	return LOG_NOTICE;
 	}
 	
-	int Message::getVerbose()
+	int Message::getVerbose() const
 	{
 		return verbose;
 	}
 
-	std::string Message::getMessage()
+	std::string Message::getMessage() const
 	{
 		return message.str();
 	}
