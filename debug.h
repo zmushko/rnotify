@@ -100,7 +100,7 @@ class Error : public Logging::Message
 class Info : public Logging::Message
 {
 	public:
-		template <class Type> Error& operator <<(Type msg)
+		template <class Type> Info& operator <<(Type msg)
 		{
 			message << msg;
 		}
@@ -114,7 +114,7 @@ class Info : public Logging::Message
 class Warning : public Logging::Message
 {
 	public:
-		template <class Type> Error& operator <<(Type msg)
+		template <class Type> Warning& operator <<(Type msg)
 		{
 			message << msg;
 		}
@@ -128,7 +128,7 @@ class Warning : public Logging::Message
 class Trace : public Logging::Message
 {
 	public:
-		template <class Type> Error& operator <<(Type msg)
+		template <class Type> Trace& operator <<(Type msg)
 		{
 			message << msg;
 		}

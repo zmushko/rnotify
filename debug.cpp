@@ -123,6 +123,7 @@ namespace Logging
 
 	void Message::Print(int verbose)
 	{
+	std::cout << verbose << "--" << Logging::Logger::TRACE << std::endl;
 		if (verbose <= Logging::Logger::Instance().getVerboseLevel())
 		{
 			int safe_errno = errno;
