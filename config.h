@@ -13,29 +13,29 @@ class Config
 		string	getMyName();
 		bool	getNeedHelp();
 		bool	getCatchRename();
-		int	getMask();
+		int		getMask();
 		bool	getEnableSuppressor();
 		bool	getSkipZeroFile();
-		int	getHearbeat();
+		int		getHearbeat();
 		string	getExclude();
 		string	getPathToScripts();
 		bool	getNoDemon();
 		string	getPidfilePath();
 		string	getLogfilePath();
-		int	getVerbose();
+		int		getVerbose();
 		
 	private:
 		vector	<char*> m_watch;
-		int	m_verbose;
+		int		m_verbose;
 		string	m_pidfile_path;
 		string	m_logfile_path;
 		bool	m_no_demon;
 		string	m_path_to_scripts;
 		string	m_exclude;
-		int	m_heartbeat;
+		int		m_heartbeat;
 		bool	m_skip_zero_file;
 		bool	m_enable_supressor;
-		int	m_mask;
+		int		m_mask;
 		bool	m_catch_rename;
 		bool	m_need_help;
 		string	m_my_name;

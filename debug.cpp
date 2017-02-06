@@ -183,3 +183,16 @@ namespace Logging
 	}
 } 
 
+std::string Debug::Legenda(std::string const& prefix)
+{
+	return Logging::Logger::printLegenda(prefix);
+}
+
+void Debug::Init(int verbose, bool console, std::string path)
+{
+	Logging::Logger::Instance().setVerboseLevel(verbose);
+	Logging::Logger::Instance().enableConsole(console);
+	Logging::Logger::Instance().enableFile(path);
+}
+
+

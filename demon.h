@@ -1,5 +1,5 @@
-#ifndef __APP_H
-#define __APP_H
+#ifndef __DEMON_H
+#define __DEMON_H
 
 #include "debug.h"
 #include "config.h"
@@ -7,7 +7,9 @@
 class Demon 
 {
 	private:
-		Debug	debug;	
+		Debug	debug;
+		Trace	trace;
+
 		Config*	conf;
 		void	printUsage();
 	public:
@@ -17,5 +19,4 @@ class Demon
 };
 
 
-#endif /* __APP_H */
-
+#endif /* __DEMON_H */

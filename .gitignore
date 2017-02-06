@@ -1,0 +1,6 @@
+tags
+*.o
+rnotifyd
+librnotify
+*.swp
+

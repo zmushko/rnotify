@@ -11,7 +11,7 @@
 #include <syslog.h>
 #include <execinfo.h>
 
-#define WHERE	__FILE__ << ":" << __LINE__ << ":"
+#define WHERE		__FILE__ << ":" << __LINE__ << ":"
 #define EXEPTION	__FILE__, __LINE__,
 
 namespace Logging
@@ -60,17 +60,9 @@ namespace Logging
 class Debug : public Logging::Message
 {
 	public:
-		static std::string Legenda(std::string const& prefix)
-		{
-			return Logging::Logger::printLegenda(prefix);
-		}
+		static std::string Legenda(std::string const& prefix);
 		
-		static void Init(int verbose, bool console, std::string path)
-		{
-			Logging::Logger::Instance().setVerboseLevel(verbose);
-			Logging::Logger::Instance().enableConsole(console);
-			Logging::Logger::Instance().enableFile(path);
-		}
+		static void Init(int verbose, bool console, std::string path);
 
 		template <class Type> Debug& operator <<(Type msg)
 		{
@@ -143,6 +135,7 @@ class Exception
 {
 	private:
 		std::string error;
+
 	public:
 		Exception(std::string e) : error(e)
 		{
@@ -162,3 +155,4 @@ class Exception
 };
 
 #endif /* __DEBUG_H */
+
