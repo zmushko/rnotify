@@ -1,5 +1,5 @@
 CC = g++ -std=c++11
-CFLAGS = -g -rdynamic
+CFLAGS = -g 
 
 all : librnotify
 	cd librnotify && make all 

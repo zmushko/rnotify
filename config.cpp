@@ -80,9 +80,9 @@ string Config::getPathToScripts()
 	return m_path_to_scripts;
 }
 
-string Config::getPidfilePath()
+string Config::getPidfile()
 {
-	return m_pidfile_path;
+	return m_pidfile_path + "/" + m_my_name;
 }
 
 string Config::getLogfilePath()
@@ -264,3 +264,4 @@ void Config::readOpts(int count, char** values)
 
 	Debug::Init(m_verbose, m_no_demon, m_logfile_path);
 }
+

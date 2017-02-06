@@ -7,15 +7,17 @@
 class Demon 
 {
 	private:
+		Error	error;
 		Debug	debug;
-		Trace	trace;
+		Info	info;
 
 		Config*	conf;
 		void	printUsage();
+		void	initDemon();
+		void	setSigactions();
 	public:
 		Demon(int count, char** values);
 		~Demon();		
-		
 };
 
 

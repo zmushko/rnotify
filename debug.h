@@ -12,7 +12,6 @@
 #include <execinfo.h>
 
 #define WHERE		__FILE__ << ":" << __LINE__ << ":"
-#define EXEPTION	__FILE__, __LINE__,
 
 namespace Logging
 {
@@ -20,6 +19,7 @@ namespace Logging
 	{
 		protected:
 			std::ostringstream message;
+			std::string str_errno;
 			int verbose;
 			void Print(int verbose);
 	};
@@ -137,15 +137,18 @@ class Exception
 		std::string error;
 
 	public:
-		Exception(std::string e) : error(e)
+		Exception(const char* e) : error(e)
 		{
 		}
 		
+		Exception(const char* file, int line)
+		{
+			error = std::string(file) + std::string(":") + std::to_string(line);
+		}
+
 		Exception(const char* file, int line, std::string e)
 		{
-			std::ostringstream message;
-			message << file << ":" << line << ":" << e;
-			error = message.str();
+			error = std::string(file) + std::string(":") + std::to_string(line) + std::string(":") + e;
 		}
 		
 		std::string What()

@@ -132,7 +132,7 @@ namespace Logging
 				out_msg << Logging::Logger::Instance().verboseToString(verbose) << ':';
 			}
 			out_msg << message.str();
-			if (verbose > Logging::Logger::ERROR && safe_errno)
+			if (verbose <= Logging::Logger::ERROR && safe_errno)
 			{
 				out_msg << " errno:'";
 	
