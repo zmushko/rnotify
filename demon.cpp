@@ -8,6 +8,23 @@
 #include "debug.h"
 #include "config.h"
 #include "demon.h"
+#include "signal.h"
+
+static volatile sig_atomic_t	g_SIGTERM	= 0;
+static volatile sig_atomic_t	g_SIGINT	= 0;
+static volatile sig_atomic_t	g_SIGCHLD	= 0;
+
+static void sig_term_handler(int sig)
+{
+	(void)sig;
+	g_SIGTERM = 1;
+}
+
+static void sig_chld_handler(int sig)
+{
+	(void)sig;
+	g_SIGCHLD = 1;
+}
 
 Demon::Demon(int count, char** values)
 {
@@ -20,12 +37,38 @@ Demon::Demon(int count, char** values)
 	}
 
 	info << "Start" << std::endl;
+
+	setSigactions();
 	initDemon();
+
 }
 
 Demon::~Demon()
 {
 	delete conf;
+}
+
+void Demon::setSigactions()
+{
+	struct sigaction sa;
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	sa.sa_flags	= 0;
+	sa.sa_handler	= sig_term_handler;
+	sigemptyset(&sa.sa_mask);
+	THROW_IF(sigaction(SIGTERM, &sa, NULL) == -1);
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	sa.sa_flags	= 0;
+	sa.sa_handler	= sig_term_handler;
+	sigemptyset(&sa.sa_mask);
+	THROW_IF(sigaction(SIGINT, &sa, NULL) == -1);
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	sa.sa_flags = 0;
+	sa.sa_handler = sig_chld_handler;
+	sigemptyset(&sa.sa_mask);
+	THROW_IF(sigaction(SIGCHLD, &sa, NULL) == -1);
 }
 
 void Demon::initDemon()

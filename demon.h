@@ -15,6 +15,7 @@ class Demon
 		void	printUsage();
 		void	initDemon();
 		void	setSigactions();
+
 	public:
 		Demon(int count, char** values);
 		~Demon();		
