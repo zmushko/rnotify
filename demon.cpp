@@ -30,7 +30,6 @@ Demon::~Demon()
 
 void Demon::initDemon()
 {
-	//const char* pid_file = conf->getPidfile().c_str();
 	pid_t pid   = fork();
 	THROW_IF(pid == -1);
 	if (pid)
@@ -48,12 +47,6 @@ void Demon::initDemon()
 		THROW_IF(!pid_file.is_open());
 		pid_file << pid << std::endl;
 		pid_file.close();
-		/*
-		FILE* fp = fopen(pid_file, "w");
-		THROW_IF(!fp);
-		fprintf(fp, "%d\n", pid);
-		fclose(fp);
-		*/
 		exit(EXIT_SUCCESS);
 	}
 
