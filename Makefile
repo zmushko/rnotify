@@ -1,12 +1,12 @@
 CC = g++ -std=c++11
-CFLAGS = -g 
+CFLAGS = -g -I./librnotify
 
 all : librnotify
 	cd librnotify && make all 
 	$(CC) ${CFLAGS} -c debug.cpp 
 	$(CC) ${CFLAGS} -c config.cpp 
 	$(CC) ${CFLAGS} -c demon.cpp 
-	$(CC) ${CFLAGS} -o rnotifyd debug.o main.cpp config.o demon.o 
+	$(CC) ${CFLAGS} -static -o rnotifyd debug.o main.cpp config.o demon.o -L./librnotify -lrnotify       	
 
 librnotify : 
 	git clone https://github.com/zmushko/librnotify.git

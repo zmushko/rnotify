@@ -14,7 +14,9 @@ class Demon
 		Config*	conf;
 		void	printUsage();
 		void	initDemon();
+		void	stopDemon();
 		void	setSigactions();
+		void	runObserver();
 
 	public:
 		Demon(int count, char** values);

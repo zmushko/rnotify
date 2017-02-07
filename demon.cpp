@@ -9,6 +9,8 @@
 #include "config.h"
 #include "demon.h"
 #include "signal.h"
+#include "sys/inotify.h"
+#include "rnotify.h"
 
 static volatile sig_atomic_t	g_SIGTERM	= 0;
 static volatile sig_atomic_t	g_SIGINT	= 0;
@@ -36,16 +38,100 @@ Demon::Demon(int count, char** values)
 		return;
 	}
 
-	info << "Start" << std::endl;
-
 	setSigactions();
 	initDemon();
-
+	stopDemon();
+	runObserver();
+	stopDemon();
 }
 
 Demon::~Demon()
 {
 	delete conf;
+}
+
+void Demon::runObserver()
+{
+	char** path = conf->getWatch();
+
+	Notify* ntf = initNotify(path, conf->getMask());
+	THROW_IF(ntf == NULL);
+
+	//RecursiveSuppressor* rs = NULL;
+	//PendingQue* que = NULL;
+
+	for (;;)
+	{
+		if (g_SIGTERM || g_SIGINT)
+		{
+			break;
+		}
+
+		char* np	= NULL;
+		uint32_t mask	= 0;
+		uint32_t cookie	= 0;
+		int r = waitNotify(ntf, &np, &mask, conf->getHearbeat(), &cookie);
+		if (r < 0)
+		{
+			if (errno == EINTR || errno == EACCES)
+			{
+				errno = 0;
+				continue;
+			}
+			error << "Error in waitNotify(" << np << ")" << std::endl;
+			break;
+		}
+		
+		if (mask & IN_CLOSE_WRITE)
+		{
+			info << "IN_CLOSE_WRITE: " << np << std::endl;
+		}
+				
+		if (mask & IN_CLOSE_NOWRITE)
+		{
+			info << "IN_CLOSE_NOWRITE: " << np << std::endl;
+		}
+				
+		if (mask & IN_MODIFY)
+		{
+			info << "IN_MODIFY: " << np << std::endl;
+		}
+		
+		if (mask & IN_CREATE)
+		{
+			info << "IN_CREATE: " << np << std::endl;
+		}
+		
+		if (mask & IN_DELETE)
+		{
+			info << "IN_DELETE: " << np << std::endl;
+		}
+		
+		if (mask & IN_MOVED_FROM)
+		{
+			info << "IN_MOVED_FROM: " << np << std::endl;
+		}
+		
+		if (mask & IN_MOVED_TO)
+		{
+			info << "IN_MOVED_TO: " << np << std::endl;
+		}
+		
+		if (mask & IN_DELETE_SELF)
+		{
+			info << "IN_DELETE_SELF: " << np << std::endl;
+		}
+		
+		if (mask & IN_MOVE_SELF)
+		{
+			info << "IN_MOVE_SELF: " << np << std::endl;
+		}
+
+		free(np);
+	}
+
+	//freeRecursiveSuppressor(rs);
+	freeNotify(ntf);
 }
 
 void Demon::setSigactions()
@@ -73,6 +159,11 @@ void Demon::setSigactions()
 
 void Demon::initDemon()
 {
+	if (conf->getNoDemon())
+	{
+		return;
+	}
+
 	pid_t pid   = fork();
 	THROW_IF(pid == -1);
 	if (pid)
@@ -100,7 +191,15 @@ void Demon::initDemon()
 	{
 		close(i);
 	}
+}
 
+void Demon::stopDemon()
+{
+	const char* pid_file = conf->getPidfile().c_str();
+	if (!access(pid_file, F_OK))
+	{
+		unlink(pid_file);
+	}
 }
 
 void Demon::printUsage()

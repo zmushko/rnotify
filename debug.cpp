@@ -179,6 +179,7 @@ namespace Logging
 				Logging::Logger::Instance().printRaw(out_msg.str());
 			}
 			syslog(Logging::Logger::Instance().verboseToInt(verbose), "%s", out_msg.str().c_str());
+			message.str("");
 		}
 	}
 } 

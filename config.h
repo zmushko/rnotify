@@ -12,12 +12,13 @@ class Config
 		
 		bool	getNeedHelp();
 		bool	getCatchRename();
-		int	getMask();
 		bool	getEnableSuppressor();
 		bool	getSkipZeroFile();
 		int	getHearbeat();
 		bool	getNoDemon();
 		int	getVerbose();
+		char**	getWatch();
+		uint32_t	getMask();
 		std::string	getPidfile();
 		std::string	getLogfilePath();
 		std::string	getExclude();

@@ -90,7 +90,7 @@ string Config::getLogfilePath()
 	return m_logfile_path;
 }
 
-int Config::getMask()
+uint32_t Config::getMask()
 {
 	return m_mask;
 }
@@ -105,6 +105,10 @@ int Config::getVerbose()
 	return m_verbose;
 }
 
+char** Config::getWatch()
+{
+	return &m_watch[0];
+}
 
 void Config::readMask()
 {
