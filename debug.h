@@ -11,7 +11,7 @@
 #include <syslog.h>
 #include <execinfo.h>
 
-#define WHERE		__FILE__ << ":" << __LINE__ << ":"
+#define THROW_IF(A) do{if(A)throw Exception(__FUNCTION__, __FILE__, __LINE__);}while(0)
 
 namespace Logging
 {
@@ -135,6 +135,10 @@ class Exception
 {
 	private:
 		std::string error;
+		void addWhere(const char* file, int line)
+		{
+			error = std::string(file) + std::string(":") + std::to_string(line);
+		}
 
 	public:
 		Exception(const char* e) : error(e)
@@ -143,12 +147,19 @@ class Exception
 		
 		Exception(const char* file, int line)
 		{
-			error = std::string(file) + std::string(":") + std::to_string(line);
+			addWhere(file, line);
 		}
 
 		Exception(const char* file, int line, std::string e)
 		{
-			error = std::string(file) + std::string(":") + std::to_string(line) + std::string(":") + e;
+			addWhere(file, line);
+			error += std::string(":") + e;
+		}
+		
+		Exception(const char* function, const char* file, int line)
+		{
+			addWhere(file, line);
+			error += std::string(" Exception in ") + std::string(function) + std::string("()");
 		}
 		
 		std::string What()

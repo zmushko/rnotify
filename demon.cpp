@@ -30,9 +30,10 @@ Demon::~Demon()
 
 void Demon::initDemon()
 {
-	const char* pid_file = conf->getPidfile().c_str();
-	pid_t pid   = 0;
-	if (fork())
+	//const char* pid_file = conf->getPidfile().c_str();
+	pid_t pid   = fork();
+	THROW_IF(pid == -1);
+	if (pid)
 	{
 		exit(EXIT_SUCCESS);
 	}
@@ -40,15 +41,19 @@ void Demon::initDemon()
 	signal(SIGHUP, SIG_IGN);
 
 	pid = fork();
+	THROW_IF(pid == -1);
 	if (pid)
 	{
+		std::ofstream pid_file(conf->getPidfile().c_str());
+		THROW_IF(!pid_file.is_open());
+		pid_file << pid << std::endl;
+		pid_file.close();
+		/*
 		FILE* fp = fopen(pid_file, "w");
-		if (!fp)
-		{
-			throw Exception(__FILE__, __LINE__);
-		}
+		THROW_IF(!fp);
 		fprintf(fp, "%d\n", pid);
 		fclose(fp);
+		*/
 		exit(EXIT_SUCCESS);
 	}
 
