@@ -273,7 +273,7 @@ void Demon::runObserver()
 
 		if (np && name)
 		{
-			spawnScript(np, name);
+			spawnChild(np, name);
 		}
 
 		free(np);

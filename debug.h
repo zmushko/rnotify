@@ -62,7 +62,7 @@ class Debug : public Logging::Message
 	public:
 		static std::string Legenda(std::string const& prefix);
 		
-		static void Init(int verbose, bool console, std::string path);
+		static void Init(int verbose, bool console, std::string const& path);
 
 		template <class Type> Debug& operator <<(Type msg)
 		{
