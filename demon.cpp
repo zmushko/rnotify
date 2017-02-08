@@ -4,12 +4,13 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include "sys/inotify.h"
 
 #include "debug.h"
 #include "config.h"
 #include "demon.h"
 #include "signal.h"
-#include "sys/inotify.h"
 #include "rnotify.h"
 
 static volatile sig_atomic_t	g_SIGTERM	= 0;
@@ -50,6 +51,146 @@ Demon::~Demon()
 	delete conf;
 }
 
+void Demon::spawnChild(const char* path, const char* name)
+{
+	if (path == NULL || name == NULL)
+	{
+		debug << __FUNCTION__ << "(): arguments can not be NULL" << std::endl;
+		return;
+	}
+
+	int fd1[2] = {0,};
+	int fd2[2] = {0,};
+	
+	THROW_IF(-1 == pipe(fd1));
+	THROW_IF(-1 == pipe(fd2));
+
+	pid_t pid = fork();
+
+	THROW_IF(-1 == pid);
+	
+	if (!pid)
+	{
+		close(fd1[0]);
+		close(fd2[0]);
+		
+		dup2(fd1[1], STDOUT_FILENO);
+		dup2(fd2[1], STDERR_FILENO);
+
+		std::string path_name = conf->getPathToScripts() + "/" + name;
+		execlp(path_name.c_str(), name, path, NULL);
+		
+		exit(errno);
+	}
+	else
+	{
+		info << "Child pid " << pid << " " << name << " " << path << std::endl;
+		
+		close(fd1[1]);
+		close(fd2[1]);
+
+		int r		= 0;
+		int total	= 0;
+		char buf[512]	= {'\0',};
+
+		char* respond = NULL;
+		int safe_errno  = errno;
+		while ((r = read(fd2[0], buf, sizeof(buf))))
+		{
+			if (-1 == r)
+			{
+				if (errno == EINTR
+					|| errno == EAGAIN
+					|| errno == EWOULDBLOCK)
+				{
+					errno = safe_errno;
+					continue;
+				}
+				free(respond);
+				THROW_IF(true);
+			}
+			char* t = (char*)realloc(respond, total + r + 1);
+			if (!t)
+			{
+				free(respond);
+				THROW_IF(true);
+			}
+			respond = t;
+			memcpy(respond + total, buf, r);
+			total += r;
+		}
+
+		if (respond)
+		{
+			*(respond + total) = '\0';
+			error << "Child pid " << pid << " (stderr): \n" << respond << "<<<<" << std::endl;
+			free(respond);
+			respond = NULL;
+		}
+		
+		r	= 0;
+		total	= 0;
+		buf[0]	= '\0';
+		safe_errno  = errno;
+		while ((r = read(fd1[0], buf, sizeof(buf))))
+		{
+			if (-1 == r)
+			{
+				if (errno == EINTR
+					|| errno == EAGAIN
+					|| errno == EWOULDBLOCK)
+				{
+					errno = safe_errno;
+					continue;
+				}
+				free(respond);
+				THROW_IF(true);
+			}
+			char* t = (char*)realloc(respond, total + r + 1);
+			if (!t)
+			{
+				free(respond);
+				THROW_IF(true);
+			}
+			respond = t;
+			memcpy(respond + total, buf, r);
+			total += r;
+		}
+
+		if (respond)
+		{
+			*(respond + total) = '\0';
+			info << "Child pid " << pid << " (stdout): \n" << respond << "<<<<" << std::endl;
+		}	
+		
+		int status = 0;
+		if (-1 != waitpid(pid, &status, 0))
+		{
+			if (!WIFEXITED(status))
+			{
+				if (WIFSIGNALED(status))
+				{
+					int term_stat = WTERMSIG(status);
+					#ifdef WCOREDUMP
+						int core_stat = WCOREDUMP(status);
+						debug << "Child pid " << pid << " terminated by signal " << term_stat << (core_stat ? ", Core dumped" : "") << std::endl;
+					#else
+						debug << "Child pid " << pid << " terminated by signal " << term_stat << std::endl;
+					#endif
+				}
+				else
+				{
+					debug << "Child pid " << pid << " abnormally terminated" << std::endl;
+				}
+			}
+			else
+			{
+				info << "Child pid " << pid << " normally terminated with status: " << WEXITSTATUS(status) << std::endl;
+			}
+		}
+	}
+}
+
 void Demon::runObserver()
 {
 	char** path = conf->getWatch();
@@ -70,61 +211,69 @@ void Demon::runObserver()
 		char* np	= NULL;
 		uint32_t mask	= 0;
 		uint32_t cookie	= 0;
-		int r = waitNotify(ntf, &np, &mask, conf->getHearbeat(), &cookie);
+		int r = waitNotify(ntf, &np, &mask, conf->getHearbeat() * 1e3, &cookie);
 		if (r < 0)
 		{
-			if (errno == EINTR || errno == EACCES)
+			if (errno == EINTR ||
+				errno == EACCES )
 			{
+				error << " *** Ignore *** " << np << " " << std::endl;
 				errno = 0;
 				continue;
 			}
 			error << "Error in waitNotify(" << np << ")" << std::endl;
 			break;
 		}
-		
+
+		const char* name = NULL;
 		if (mask & IN_CLOSE_WRITE)
 		{
-			info << "IN_CLOSE_WRITE: " << np << std::endl;
+			name = "IN_CLOSE_WRITE";
 		}
 				
 		if (mask & IN_CLOSE_NOWRITE)
 		{
-			info << "IN_CLOSE_NOWRITE: " << np << std::endl;
+			name = "IN_CLOSE_NOWRITE";
 		}
 				
 		if (mask & IN_MODIFY)
 		{
-			info << "IN_MODIFY: " << np << std::endl;
+			name = "IN_MODIFY";
 		}
 		
 		if (mask & IN_CREATE)
 		{
-			info << "IN_CREATE: " << np << std::endl;
+			name = "IN_CREATE";
 		}
 		
 		if (mask & IN_DELETE)
 		{
-			info << "IN_DELETE: " << np << std::endl;
+			name = "IN_DELETE";
 		}
 		
 		if (mask & IN_MOVED_FROM)
 		{
-			info << "IN_MOVED_FROM: " << np << std::endl;
+			name = "IN_MOVED_FROM";
 		}
 		
 		if (mask & IN_MOVED_TO)
 		{
-			info << "IN_MOVED_TO: " << np << std::endl;
+			name = "IN_MOVED_TO";
 		}
 		
 		if (mask & IN_DELETE_SELF)
 		{
-			info << "IN_DELETE_SELF: " << np << std::endl;
+			name = "IN_DELETE_SELF";
 		}
 		
 		if (mask & IN_MOVE_SELF)
 		{
-			info << "IN_MOVE_SELF: " << np << std::endl;
+			name = "IN_MOVE_SELF";
+		}
+
+		if (np && name)
+		{
+			spawnScript(np, name);
 		}
 
 		free(np);

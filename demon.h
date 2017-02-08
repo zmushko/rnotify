@@ -17,6 +17,7 @@ class Demon
 		void	stopDemon();
 		void	setSigactions();
 		void	runObserver();
+		void	spawnChild(const char* path, const char* name);
 
 	public:
 		Demon(int count, char** values);

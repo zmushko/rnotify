@@ -33,11 +33,3 @@ int main(int argc, char** argv)
 	
 	return 0;
 }
-
-/*
-	char** w = &watch[0];
-	for (int i = 0; w[i]; ++i)
-	{
-		cout << "W:" << w[i] << endl;
-	}
-*/
