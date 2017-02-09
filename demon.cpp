@@ -17,16 +17,54 @@ static volatile sig_atomic_t	g_SIGTERM	= 0;
 static volatile sig_atomic_t	g_SIGINT	= 0;
 static volatile sig_atomic_t	g_SIGCHLD	= 0;
 
-static void sig_term_handler(int sig)
+namespace DemonNs
 {
-	(void)sig;
-	g_SIGTERM = 1;
-}
+	static void sig_term_handler(int sig)
+	{
+		(void)sig;
+		g_SIGTERM = 1;
+	}
 
-static void sig_chld_handler(int sig)
-{
-	(void)sig;
-	g_SIGCHLD = 1;
+	static void sig_chld_handler(int sig)
+	{
+		(void)sig;
+		g_SIGCHLD = 1;
+	}
+
+	class pipeRail
+	{
+		private:
+			int fd;
+
+		public:
+			pipeRail(int fd);
+			void operator >>(std::string& respond);
+	};
+
+	pipeRail::pipeRail(int fd) : fd(fd)
+	{
+	}
+
+	void pipeRail::operator >>(std::string& respond)
+	{
+		int status = 0;
+		char buf[4096] = {'\0', };
+
+		while ((status = ::read(fd, buf, sizeof(buf))))
+		{
+			if (-1 == status)
+			{
+				if (errno == EINTR
+					|| errno == EAGAIN)
+				{
+					errno = 0;
+					continue;
+				}
+				THROW_IF(true);
+			}
+			respond += std::string(buf);
+		}
+	}
 }
 
 Demon::Demon(int count, char** values)
@@ -89,79 +127,15 @@ void Demon::spawnChild(const char* path, const char* name)
 		close(fd1[1]);
 		close(fd2[1]);
 
-		int r		= 0;
-		int total	= 0;
-		char buf[512]	= {'\0',};
-
-		char* respond = NULL;
-		int safe_errno  = errno;
-		while ((r = read(fd2[0], buf, sizeof(buf))))
-		{
-			if (-1 == r)
-			{
-				if (errno == EINTR
-					|| errno == EAGAIN
-					|| errno == EWOULDBLOCK)
-				{
-					errno = safe_errno;
-					continue;
-				}
-				free(respond);
-				THROW_IF(true);
-			}
-			char* t = (char*)realloc(respond, total + r + 1);
-			if (!t)
-			{
-				free(respond);
-				THROW_IF(true);
-			}
-			respond = t;
-			memcpy(respond + total, buf, r);
-			total += r;
-		}
-
-		if (respond)
-		{
-			*(respond + total) = '\0';
-			error << "Child pid " << pid << " (stderr): \n" << respond << "<<<<" << std::endl;
-			free(respond);
-			respond = NULL;
-		}
+		std::string err_respond;
+		DemonNs::pipeRail p_err(fd2[0]);
+		p_err >> err_respond;
+		info << "Child pid " << pid << " (stderr): \n" << err_respond << "<<<<" << std::endl;
 		
-		r	= 0;
-		total	= 0;
-		buf[0]	= '\0';
-		safe_errno  = errno;
-		while ((r = read(fd1[0], buf, sizeof(buf))))
-		{
-			if (-1 == r)
-			{
-				if (errno == EINTR
-					|| errno == EAGAIN
-					|| errno == EWOULDBLOCK)
-				{
-					errno = safe_errno;
-					continue;
-				}
-				free(respond);
-				THROW_IF(true);
-			}
-			char* t = (char*)realloc(respond, total + r + 1);
-			if (!t)
-			{
-				free(respond);
-				THROW_IF(true);
-			}
-			respond = t;
-			memcpy(respond + total, buf, r);
-			total += r;
-		}
-
-		if (respond)
-		{
-			*(respond + total) = '\0';
-			info << "Child pid " << pid << " (stdout): \n" << respond << "<<<<" << std::endl;
-		}	
+		std::string out_respond;
+		DemonNs::pipeRail p_out(fd1[0]);
+		p_out >> out_respond;
+		info << "Child pid " << pid << " (stdout): \n" << out_respond << "<<<<" << std::endl;
 		
 		int status = 0;
 		if (-1 != waitpid(pid, &status, 0))
@@ -289,19 +263,19 @@ void Demon::setSigactions()
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_flags	= 0;
-	sa.sa_handler	= sig_term_handler;
+	sa.sa_handler	= DemonNs::sig_term_handler;
 	sigemptyset(&sa.sa_mask);
 	THROW_IF(sigaction(SIGTERM, &sa, NULL) == -1);
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_flags	= 0;
-	sa.sa_handler	= sig_term_handler;
+	sa.sa_handler	= DemonNs::sig_term_handler;
 	sigemptyset(&sa.sa_mask);
 	THROW_IF(sigaction(SIGINT, &sa, NULL) == -1);
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_flags = 0;
-	sa.sa_handler = sig_chld_handler;
+	sa.sa_handler = DemonNs::sig_chld_handler;
 	sigemptyset(&sa.sa_mask);
 	THROW_IF(sigaction(SIGCHLD, &sa, NULL) == -1);
 }
