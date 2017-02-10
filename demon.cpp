@@ -183,7 +183,18 @@ void Demon::runObserver()
 	char** path = conf->getWatch();
 
 	Notify* ntf = initNotify(path, conf->getMask());
-	_THROW_IF(ntf == NULL);
+	if (ntf == NULL)
+	{
+		if (errno == ENOENT)
+		{
+			fatal << " Nothing to do since even one notified folder does not found, please check -w argument" << std::endl;
+			return;
+		}
+		else
+		{
+			_THROW_IF(true);
+		}
+	}
 
 	for (;;)
 	{
@@ -207,7 +218,6 @@ void Demon::runObserver()
 			}
 			else if (errno == ENOSPC)
 			{
-				Fatal fatal;
 				fatal << " Limit of /proc/sys/fs/inotify/max_user_watches was reached, please increase it and restart me." << std::endl;
 			}
 			else
@@ -218,21 +228,26 @@ void Demon::runObserver()
 		}
 
 		const char* name = NULL;
+		if (mask & IN_ACCESS)
+		{
+			name = "IN_ACCESS";
+		}
+
+		if (mask & IN_ATTRIB)
+		{
+			name = "IN_ATTRIB";
+		}
+
 		if (mask & IN_CLOSE_WRITE)
 		{
 			name = "IN_CLOSE_WRITE";
 		}
-				
+
 		if (mask & IN_CLOSE_NOWRITE)
 		{
 			name = "IN_CLOSE_NOWRITE";
 		}
 				
-		if (mask & IN_MODIFY)
-		{
-			name = "IN_MODIFY";
-		}
-		
 		if (mask & IN_CREATE)
 		{
 			name = "IN_CREATE";
@@ -241,6 +256,21 @@ void Demon::runObserver()
 		if (mask & IN_DELETE)
 		{
 			name = "IN_DELETE";
+		}
+		
+		if (mask & IN_DELETE_SELF)
+		{
+			name = "IN_DELETE_SELF";
+		}
+
+		if (mask & IN_MODIFY)
+		{
+			name = "IN_MODIFY";
+		}
+
+		if (mask & IN_MOVE_SELF)
+		{
+			name = "IN_MOVE_SELF";
 		}
 		
 		if (mask & IN_MOVED_FROM)
@@ -253,16 +283,11 @@ void Demon::runObserver()
 			name = "IN_MOVED_TO";
 		}
 		
-		if (mask & IN_DELETE_SELF)
+		if (mask & IN_OPEN)
 		{
-			name = "IN_DELETE_SELF";
+			name = "IN_OPEN";
 		}
 		
-		if (mask & IN_MOVE_SELF)
-		{
-			name = "IN_MOVE_SELF";
-		}
-
 		if (np && name)
 		{
 			spawnChild(np, name);

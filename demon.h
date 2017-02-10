@@ -7,6 +7,7 @@
 class Demon 
 {
 	private:
+		Fatal	fatal;
 		Error	error;
 		Debug	debug;
 		Info	info;
