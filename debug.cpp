@@ -198,7 +198,7 @@ namespace Logging
 			}
 			
 			if (!Logging::Logger::Instance().isLogFileEnabled() || 
-				verbose <= Logging::Logger::ERROR)
+				(verbose > Logging::Logger::UNKNOWN && verbose <= Logging::Logger::ERROR))
 			{
 				Logging::Logger::Instance().printCout(out_msg.str());
 			}

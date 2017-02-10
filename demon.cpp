@@ -37,7 +37,6 @@ namespace DemonNs
 	{
 		private:
 			int fd;
-			// ssize_t totalRead(int fd, char** buf, size_t len);
 
 		public:
 			pipeReader(int fd);
@@ -47,41 +46,6 @@ namespace DemonNs
 	pipeReader::pipeReader(int fd) : fd(fd)
 	{
 	}
-
-	/*
-	ssize_t pipeReader::totalRead(int fd, char** buf, size_t len)
-	{
-		ssize_t total	= 0;
-
-		Debug debug;
-
-		debug << len << std::endl;
-
-		while (len > total)
-		{
-			ssize_t done = read(fd, *buf + total, len - total);
-			if (done > 0)
-			{
-				total += (size_t)done;
-			}
-			else if (0 == done)
-			{
-				break;
-			}
-			else
-			{
-				if (errno != EINTR && 
-					errno != EAGAIN)
-				{
-					total = -1;
-					break;
-				}
-			}
-		}
-
-		return total;
-	}
-	*/
 
 	void pipeReader::operator >>(std::string& rval)
 	{
@@ -104,68 +68,6 @@ namespace DemonNs
 			}
 			rval += std::string(buf);
 		}
-
-		/*
-		size_t length = 0;
-		int status = ioctl(fd, FIONREAD, &length);
-		_THROW_IF(-1 == status);
-
-		//char* buffer = new char[length]();
-		char* buffer = (char*)malloc(length);
-		_THROW_IF(buffer == NULL);
-
-		ssize_t total_read = totalRead(fd, &buffer, length);
-		_THROW_IF(length != total_read);
-		
-		if (total_read > 0)
-		{
-			respond = std::string(buffer);
-		}
-		free(buffer);
-		//delete[] buffer;
-		*/
-
-		/*
-		int r		= 0;
-		int total	= 0;
-		char buf[512]	= {'\0',};
-
-		char* respond = NULL;
-		int safe_errno  = errno;
-		while ((r = read(fd, buf, sizeof(buf))))
-		{
-			if (-1 == r)
-			{
-				if (errno == EINTR
-					|| errno == EAGAIN
-					|| errno == EWOULDBLOCK)
-				{
-					errno = safe_errno;
-					continue;
-				}
-				free(respond);
-				_THROW_IF(true);
-			}
-			char* t = (char*)realloc(respond, total + r + 1);
-			if (!t)
-			{
-				free(respond);
-				_THROW_IF(true);
-			}
-			respond = t;
-			memcpy(respond + total, buf, r);
-			total += r;
-		}
-
-		if (respond)
-		{
-			*(respond + total) = '\0';
-			rval = std::string(respond);
-			free(respond);
-		}
-		*/
-
-
 	}
 }
 
@@ -299,7 +201,7 @@ void Demon::runObserver()
 			if (errno == EINTR ||
 				errno == EACCES )
 			{
-				error << " *** Ignore *** " << np << " " << std::endl;
+				error << " *** Ignored *** " << np << " " << std::endl;
 				errno = 0;
 				continue;
 			}
@@ -416,7 +318,10 @@ void Demon::initDemon()
 	if (pid)
 	{
 		std::ofstream pid_file(conf->getPidfile().c_str());
-		_THROW_IF(!pid_file.is_open());
+		if (!pid_file.is_open())
+		{
+			error << " Can't open pid file " << conf->getPidfile() << std::endl;
+		}
 		pid_file << pid << std::endl;
 		pid_file.close();
 		exit(EXIT_SUCCESS);

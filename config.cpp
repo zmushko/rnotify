@@ -82,7 +82,7 @@ string Config::getPathToScripts()
 
 string Config::getPidfile()
 {
-	return m_pidfile_path + "/" + m_my_name;
+	return m_pidfile_path + "/" + m_my_name + ".pid";
 }
 
 string Config::getLogfilePath()
@@ -121,7 +121,7 @@ void Config::readMask()
 	DIR* dp	= opendir(m_path_to_scripts.c_str());
 	if (dp == NULL)
 	{
-		fatal << "Can't open " << m_path_to_scripts.c_str() << "." << std::endl; 
+		fatal << " Nothing to do in " << m_path_to_scripts.c_str() << "/. Please follow instructions for -s argument." << std::endl; 
 		m_need_help = true;
 		return;
 	}
@@ -130,7 +130,7 @@ void Config::readMask()
 	struct dirent* entry = new struct dirent[dirent_sz + 1];
 	if (entry == NULL)
 	{
-		fatal << "Can't get entry from " << m_path_to_scripts.c_str() << "." << std::endl; 
+		fatal << " Can't get entry from " << m_path_to_scripts.c_str() << "." << std::endl; 
 		m_need_help = true;
 		closedir(dp);
 		return;
@@ -146,7 +146,7 @@ void Config::readMask()
 			break;
 		}
 
-                if (!strcmp(entry->d_name, ".")
+		if (!strcmp(entry->d_name, ".")
 			|| !strcmp(entry->d_name, ".."))
 		{
                         continue;
@@ -280,7 +280,7 @@ void Config::readOpts(int count, char** values)
 	char** watch = getWatch();
 	if (watch[0] == NULL)
 	{
-		fatal << " Can't find watched directory, at least one should be present." << std::endl; 
+		fatal << " At least one watched directory should be present. Look at -w argument please." << std::endl; 
 		m_need_help = true;
 	}
 }
