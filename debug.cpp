@@ -24,7 +24,7 @@ namespace Logging
 
 	void Logger::enableFile(std::string const& path)
 	{
-		m_fstream.open(path.c_str(), std::ios_base::app);
+		conf_pathfile = path;
 	}
 	
 	void Logger::setVerboseLevel(int level)
@@ -35,6 +35,16 @@ namespace Logging
 	int Logger::getVerboseLevel()
 	{
 		return conf_verbose;
+	}
+	
+	bool Logger::isConsoleEnabled()
+	{
+		return conf_console;
+	}
+	
+	bool Logger::isLogFileEnabled()
+	{
+		return m_fstream.is_open();
 	}
 
 	void Logger::printCerr(std::string const& message)
@@ -55,6 +65,11 @@ namespace Logging
 	
 	void Logger::printFile(std::string const& message)
 	{
+		if (!m_fstream.is_open())
+		{
+			m_fstream.open(conf_pathfile.c_str(), std::ios_base::app);
+		}	
+		
 		if (m_fstream.is_open())
 		{
 			char datetime[256] = {'\0', };
@@ -132,7 +147,7 @@ namespace Logging
 				out_msg << Logging::Logger::Instance().verboseToString(verbose) << ':';
 			}
 			out_msg << message.str();
-			if (verbose <= Logging::Logger::ERROR && safe_errno)
+			if (verbose == Logging::Logger::ERROR && safe_errno)
 			{
 				out_msg << " errno:'";
 	
@@ -168,8 +183,11 @@ namespace Logging
 				}
 			}
 
-			Logging::Logger::Instance().printCout(out_msg.str());
-			Logging::Logger::Instance().printCerr(out_msg.str());
+			if (verbose <= Logging::Logger::ERROR)
+			{
+				Logging::Logger::Instance().printCerr(out_msg.str());
+			}
+
 			if (verbose != Logging::Logger::TRACE)
 			{
 				Logging::Logger::Instance().printFile(out_msg.str());
@@ -178,7 +196,19 @@ namespace Logging
 			{
 				Logging::Logger::Instance().printRaw(out_msg.str());
 			}
-			syslog(Logging::Logger::Instance().verboseToInt(verbose), "%s", out_msg.str().c_str());
+			
+			if (!Logging::Logger::Instance().isLogFileEnabled() || 
+				verbose <= Logging::Logger::ERROR)
+			{
+				Logging::Logger::Instance().printCout(out_msg.str());
+			}
+
+			if ((!Logging::Logger::Instance().isConsoleEnabled() && !Logging::Logger::Instance().isLogFileEnabled()) || 
+				verbose <= Logging::Logger::ERROR)
+			{
+				syslog(Logging::Logger::Instance().verboseToInt(verbose), "%s", out_msg.str().c_str());
+			}
+
 			message.str("");
 		}
 	}

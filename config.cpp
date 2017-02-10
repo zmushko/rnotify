@@ -112,7 +112,7 @@ char** Config::getWatch()
 
 void Config::readMask()
 {
-	if (!m_path_to_scripts.length())
+	if (m_path_to_scripts.empty())
 	{
 		m_mask = 0;
 		return;
@@ -121,13 +121,17 @@ void Config::readMask()
 	DIR* dp	= opendir(m_path_to_scripts.c_str());
 	if (dp == NULL)
 	{
+		fatal << "Can't open " << m_path_to_scripts.c_str() << "." << std::endl; 
+		m_need_help = true;
 		return;
 	}
 
-	size_t dirent_sz	= offsetof(struct dirent, d_name) + pathconf(m_path_to_scripts.c_str(), _PC_NAME_MAX);
-	struct dirent* entry	= new struct dirent[dirent_sz + 1];
+	size_t dirent_sz = offsetof(struct dirent, d_name) + pathconf(m_path_to_scripts.c_str(), _PC_NAME_MAX);
+	struct dirent* entry = new struct dirent[dirent_sz + 1];
 	if (entry == NULL)
 	{
+		fatal << "Can't get entry from " << m_path_to_scripts.c_str() << "." << std::endl; 
+		m_need_help = true;
 		closedir(dp);
 		return;
 	}
@@ -214,14 +218,19 @@ void Config::readMask()
 		}
 	}
 
+	if (!m_mask && !m_catch_rename)
+	{
+		m_need_help = true;
+	}
+
 	delete entry;
 	closedir(dp);
 }
 
 void Config::readOpts(int count, char** values)
 {
-	const char* opts	= "v:p:l:dhw:s:e:t:zu";
-	char opt		= 0;
+	const char* opts = "v:p:l:dhw:s:e:t:zu";
+	char opt = 0;
 
 	while (-1 != (opt = getopt(count, values, opts)))
 	{
@@ -267,5 +276,12 @@ void Config::readOpts(int count, char** values)
 	m_watch.push_back(NULL);
 
 	Debug::Init(m_verbose, m_no_demon, m_logfile_path);
+
+	char** watch = getWatch();
+	if (watch[0] == NULL)
+	{
+		fatal << " Can't find watched directory, at least one should be present." << std::endl; 
+		m_need_help = true;
+	}
 }
 

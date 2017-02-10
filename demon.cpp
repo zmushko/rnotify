@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/ioctl.h>
+
 #include "sys/inotify.h"
 
 #include "debug.h"
@@ -31,24 +33,62 @@ namespace DemonNs
 		g_SIGCHLD = 1;
 	}
 
-	class pipeRail
+	class pipeReader
 	{
 		private:
 			int fd;
+			// ssize_t totalRead(int fd, char** buf, size_t len);
 
 		public:
-			pipeRail(int fd);
+			pipeReader(int fd);
 			void operator >>(std::string& respond);
 	};
 
-	pipeRail::pipeRail(int fd) : fd(fd)
+	pipeReader::pipeReader(int fd) : fd(fd)
 	{
 	}
 
-	void pipeRail::operator >>(std::string& respond)
+	/*
+	ssize_t pipeReader::totalRead(int fd, char** buf, size_t len)
 	{
+		ssize_t total	= 0;
+
+		Debug debug;
+
+		debug << len << std::endl;
+
+		while (len > total)
+		{
+			ssize_t done = read(fd, *buf + total, len - total);
+			if (done > 0)
+			{
+				total += (size_t)done;
+			}
+			else if (0 == done)
+			{
+				break;
+			}
+			else
+			{
+				if (errno != EINTR && 
+					errno != EAGAIN)
+				{
+					total = -1;
+					break;
+				}
+			}
+		}
+
+		return total;
+	}
+	*/
+
+	void pipeReader::operator >>(std::string& rval)
+	{
+		rval.clear();
+
 		int status = 0;
-		char buf[4096] = {'\0', };
+		char buf[512] = {'\0', };
 
 		while ((status = ::read(fd, buf, sizeof(buf))))
 		{
@@ -60,10 +100,72 @@ namespace DemonNs
 					errno = 0;
 					continue;
 				}
-				THROW_IF(true);
+				_THROW_IF(true);
 			}
-			respond += std::string(buf);
+			rval += std::string(buf);
 		}
+
+		/*
+		size_t length = 0;
+		int status = ioctl(fd, FIONREAD, &length);
+		_THROW_IF(-1 == status);
+
+		//char* buffer = new char[length]();
+		char* buffer = (char*)malloc(length);
+		_THROW_IF(buffer == NULL);
+
+		ssize_t total_read = totalRead(fd, &buffer, length);
+		_THROW_IF(length != total_read);
+		
+		if (total_read > 0)
+		{
+			respond = std::string(buffer);
+		}
+		free(buffer);
+		//delete[] buffer;
+		*/
+
+		/*
+		int r		= 0;
+		int total	= 0;
+		char buf[512]	= {'\0',};
+
+		char* respond = NULL;
+		int safe_errno  = errno;
+		while ((r = read(fd, buf, sizeof(buf))))
+		{
+			if (-1 == r)
+			{
+				if (errno == EINTR
+					|| errno == EAGAIN
+					|| errno == EWOULDBLOCK)
+				{
+					errno = safe_errno;
+					continue;
+				}
+				free(respond);
+				_THROW_IF(true);
+			}
+			char* t = (char*)realloc(respond, total + r + 1);
+			if (!t)
+			{
+				free(respond);
+				_THROW_IF(true);
+			}
+			respond = t;
+			memcpy(respond + total, buf, r);
+			total += r;
+		}
+
+		if (respond)
+		{
+			*(respond + total) = '\0';
+			rval = std::string(respond);
+			free(respond);
+		}
+		*/
+
+
 	}
 }
 
@@ -97,17 +199,69 @@ void Demon::spawnChild(const char* path, const char* name)
 		return;
 	}
 
-	int fd1[2] = {0,};
-	int fd2[2] = {0,};
+	int fd1[2] = {0, };
+	int fd2[2] = {0, };
 	
-	THROW_IF(-1 == pipe(fd1));
-	THROW_IF(-1 == pipe(fd2));
+	_THROW_IF(-1 == pipe(fd1));
+	_THROW_IF(-1 == pipe(fd2));
 
 	pid_t pid = fork();
 
-	THROW_IF(-1 == pid);
+	_THROW_IF(-1 == pid);
 	
-	if (!pid)
+	if (pid)
+	{
+		info << "Child " << pid << " " << name << " " << path << std::endl;
+		
+		close(fd1[1]);
+		close(fd2[1]);
+
+		std::string err_respond;
+		DemonNs::pipeReader p_err(fd2[0]);
+		p_err >> err_respond;
+		if (err_respond.length())
+		{
+			info << "Child " << pid << " E:" << err_respond << "." << std::endl;
+		}
+
+		std::string out_respond;
+		DemonNs::pipeReader p_out(fd1[0]);
+		p_out >> out_respond;
+		if (out_respond.length())
+		{
+			info << "Child " << pid << " " << out_respond << "." << std::endl;
+		}
+
+		int status = 0;
+		if (-1 != waitpid(pid, &status, 0))
+		{
+			if (!WIFEXITED(status))
+			{
+				if (WIFSIGNALED(status))
+				{
+					int term_stat = WTERMSIG(status);
+					#ifdef WCOREDUMP
+						int core_stat = WCOREDUMP(status);
+						error << "Child " << pid << " terminated by signal " << term_stat << (core_stat ? ", Core dumped" : "") << std::endl;
+					#else
+						error << "Child " << pid << " terminated by signal " << term_stat << std::endl;
+					#endif
+				}
+				else
+				{
+					error << "Child " << pid << " abnormally terminated" << std::endl;
+				}
+			}
+			else
+			{
+				info << "Child " << pid << " status " << WEXITSTATUS(status) << std::endl;
+			}
+		}
+
+		close(fd1[0]);
+		close(fd2[0]);		
+	}
+	else
 	{
 		close(fd1[0]);
 		close(fd2[0]);
@@ -120,49 +274,6 @@ void Demon::spawnChild(const char* path, const char* name)
 		
 		exit(errno);
 	}
-	else
-	{
-		info << "Child pid " << pid << " " << name << " " << path << std::endl;
-		
-		close(fd1[1]);
-		close(fd2[1]);
-
-		std::string err_respond;
-		DemonNs::pipeRail p_err(fd2[0]);
-		p_err >> err_respond;
-		info << "Child pid " << pid << " (stderr): \n" << err_respond << "<<<<" << std::endl;
-		
-		std::string out_respond;
-		DemonNs::pipeRail p_out(fd1[0]);
-		p_out >> out_respond;
-		info << "Child pid " << pid << " (stdout): \n" << out_respond << "<<<<" << std::endl;
-		
-		int status = 0;
-		if (-1 != waitpid(pid, &status, 0))
-		{
-			if (!WIFEXITED(status))
-			{
-				if (WIFSIGNALED(status))
-				{
-					int term_stat = WTERMSIG(status);
-					#ifdef WCOREDUMP
-						int core_stat = WCOREDUMP(status);
-						debug << "Child pid " << pid << " terminated by signal " << term_stat << (core_stat ? ", Core dumped" : "") << std::endl;
-					#else
-						debug << "Child pid " << pid << " terminated by signal " << term_stat << std::endl;
-					#endif
-				}
-				else
-				{
-					debug << "Child pid " << pid << " abnormally terminated" << std::endl;
-				}
-			}
-			else
-			{
-				info << "Child pid " << pid << " normally terminated with status: " << WEXITSTATUS(status) << std::endl;
-			}
-		}
-	}
 }
 
 void Demon::runObserver()
@@ -170,10 +281,7 @@ void Demon::runObserver()
 	char** path = conf->getWatch();
 
 	Notify* ntf = initNotify(path, conf->getMask());
-	THROW_IF(ntf == NULL);
-
-	//RecursiveSuppressor* rs = NULL;
-	//PendingQue* que = NULL;
+	_THROW_IF(ntf == NULL);
 
 	for (;;)
 	{
@@ -195,7 +303,15 @@ void Demon::runObserver()
 				errno = 0;
 				continue;
 			}
-			error << "Error in waitNotify(" << np << ")" << std::endl;
+			else if (errno == ENOSPC)
+			{
+				Fatal fatal;
+				fatal << " Limit of /proc/sys/fs/inotify/max_user_watches was reached, please increase it and restart me." << std::endl;
+			}
+			else
+			{
+				error << "Error in waitNotify(" << np << ")" << std::endl;
+			}			
 			break;
 		}
 
@@ -253,7 +369,6 @@ void Demon::runObserver()
 		free(np);
 	}
 
-	//freeRecursiveSuppressor(rs);
 	freeNotify(ntf);
 }
 
@@ -265,19 +380,19 @@ void Demon::setSigactions()
 	sa.sa_flags	= 0;
 	sa.sa_handler	= DemonNs::sig_term_handler;
 	sigemptyset(&sa.sa_mask);
-	THROW_IF(sigaction(SIGTERM, &sa, NULL) == -1);
+	_THROW_IF(sigaction(SIGTERM, &sa, NULL) == -1);
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_flags	= 0;
 	sa.sa_handler	= DemonNs::sig_term_handler;
 	sigemptyset(&sa.sa_mask);
-	THROW_IF(sigaction(SIGINT, &sa, NULL) == -1);
+	_THROW_IF(sigaction(SIGINT, &sa, NULL) == -1);
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_flags = 0;
 	sa.sa_handler = DemonNs::sig_chld_handler;
 	sigemptyset(&sa.sa_mask);
-	THROW_IF(sigaction(SIGCHLD, &sa, NULL) == -1);
+	_THROW_IF(sigaction(SIGCHLD, &sa, NULL) == -1);
 }
 
 void Demon::initDemon()
@@ -288,7 +403,7 @@ void Demon::initDemon()
 	}
 
 	pid_t pid   = fork();
-	THROW_IF(pid == -1);
+	_THROW_IF(pid == -1);
 	if (pid)
 	{
 		exit(EXIT_SUCCESS);
@@ -297,11 +412,11 @@ void Demon::initDemon()
 	signal(SIGHUP, SIG_IGN);
 
 	pid = fork();
-	THROW_IF(pid == -1);
+	_THROW_IF(pid == -1);
 	if (pid)
 	{
 		std::ofstream pid_file(conf->getPidfile().c_str());
-		THROW_IF(!pid_file.is_open());
+		_THROW_IF(!pid_file.is_open());
 		pid_file << pid << std::endl;
 		pid_file.close();
 		exit(EXIT_SUCCESS);
@@ -310,7 +425,9 @@ void Demon::initDemon()
 	int i;
 	chdir("/");
 	umask(0);
-	for (i = 0; i < 64; i++)
+	close(0);
+	close(1);
+	for (i = 3; i < 64; i++)
 	{
 		close(i);
 	}
@@ -335,18 +452,19 @@ void Demon::printUsage()
 		<< "\t-v [verbose level 0-7] default: 2, the possible value for the verbose are:" << std::endl
 		<< Debug::Legenda("\t   ") << std::endl
 		<< "\t-p [path to pid file] default: /var/run" << std::endl
-		<< "\t-l [path to log file] by default syslog only used" << std::endl
+		<< "\t-l [path to log file] by default syslog only used, for big data you should always prefer own log file" << std::endl
 		<< "\t-s [path to executible scripts per notifications], default: /etc/rnotifyd " << std::endl
 		<< "\t   each script should have the same name as name of notification for ex. IN_DELETE and be executable," << std::endl
 		<< "\t   scripts itself will assigned to his appropriated events automatically, and receives full path of the item as first argument," << std::endl
 		<< "\t   available scripts names is: IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE, IN_CREATE" << std::endl
 		<< "\t   IN_DELETE, IN_DELETE_SELF, IN_MODIFY, IN_MOVE_SELF, IN_MOVED_FROM, IN_MOVED_TO, IN_OPEN and" << std::endl
 		<< "\t   IN_RENAME - is unique notification name will receives two arguments as `from` and `to`" << std::endl
+		<< "\t   IN_MOVED_FROM, IN_MOVED_TO - is notification has second argument 'cookie' that pairing them both" << std::endl
 		<< "\t-u suppress notifications after scripts above in case if script produce itself notification" << std::endl
 		<< "\t-e [exclude] - regular expression to define patterns that excluded from watching, for ex: ^\\." << std::endl
 		<< "\t-t [heartbeat] - timeout for IN_MOVED_FROM/IN_MOVED_TO when it will converted to IN_DELETE/IN_CREATE in miliseconds" << std::endl
 		<< "\t-z skip files with zero length" << std::endl
-		<< "\t-d no daemon mode (log will print to stdout)" << std::endl
+		<< "\t-d no daemon mode (log will print to stdout if no enabled -l option)" << std::endl
 		<< "\t-h this message" << std::endl
 		<< std::endl;
 }

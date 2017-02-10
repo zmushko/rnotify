@@ -11,7 +11,7 @@
 #include <syslog.h>
 #include <execinfo.h>
 
-#define THROW_IF(A) do{if(A)throw Exception(__FUNCTION__, __FILE__, __LINE__);}while(0)
+#define _THROW_IF(A) do{if(A)throw Exception(__FUNCTION__, __FILE__, __LINE__);}while(0)
 
 namespace Logging
 {
@@ -33,17 +33,19 @@ namespace Logging
 			Logger& operator =(const Logger&);
 
 			int	conf_verbose;
-			bool	conf_console;
+			bool conf_console;
 			std::string	conf_pathfile;
-			std::ofstream	m_fstream;
-			std::mutex	m_mutex;
+			std::ofstream m_fstream;
+			std::mutex m_mutex;
 			
 		public:	
 			enum {UNKNOWN = 0, FATAL, ERROR, WARN, INFO, DEBUG, TRACE, ALL};
 
 			static Logger& Instance();
 			void enableConsole(bool flag);
+			bool isConsoleEnabled();
 			void enableFile(std::string const& path);
+			bool isLogFileEnabled();
 			void setVerboseLevel(int level);
 			int getVerboseLevel();
 			void printCerr(std::string const& message);
@@ -86,6 +88,20 @@ class Error : public Logging::Message
 		void operator <<(std::ostream& (*f)(std::ostream&))
 		{
 			Print(Logging::Logger::ERROR);
+		}
+};
+
+class Fatal : public Logging::Message
+{
+	public:
+		template <class Type> Fatal& operator <<(Type msg)
+		{
+			message << msg;
+		}
+		
+		void operator <<(std::ostream& (*f)(std::ostream&))
+		{
+			Print(Logging::Logger::FATAL);
 		}
 };
 
