@@ -19,7 +19,7 @@ Config::Config(int count, char** values) :
 	m_logfile_path(""),
 	m_no_demon(false),
 	m_path_to_scripts("/etc/rnotifyd"),
-	m_exclude(""),
+	m_exclude(),
 	m_heartbeat(250),
 	m_skip_zero_file(false),
 	m_enable_supressor(false),
@@ -250,6 +250,7 @@ void Config::readOpts(int count, char** values)
 		{
 			case 'a':
 				m_all = true;
+				m_no_demon = true;
 				break;
 			case 'v':
 				m_verbose = atoi(optarg);

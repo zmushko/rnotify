@@ -181,7 +181,7 @@ void Demon::runObserver()
 {
 	char** path = conf->getWatch();
 
-	Notify* ntf = initNotify(path, conf->getMask());
+	Notify* ntf = initNotify(path, conf->getMask(), conf->getExclude().empty() ? NULL : conf->getExclude().c_str());
 	if (ntf == NULL)
 	{
 		if (errno == ENOENT)
@@ -229,6 +229,11 @@ void Demon::runObserver()
 				error << "Error in waitNotify(" << np << ")" << std::endl;
 			}			
 			break;
+		}
+
+		if (np == NULL)
+		{
+			continue;
 		}
 
 		const char* name = NULL;
@@ -335,7 +340,7 @@ void Demon::setSigactions()
 
 void Demon::initDemon()
 {
-	if (conf->getNoDemon() || conf->getAll())
+	if (conf->getNoDemon())
 	{
 		return;
 	}
