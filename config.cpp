@@ -164,67 +164,70 @@ void Config::readMask()
                         continue;
 		}
 
-		if (!strcmp(result->d_name, "IN_ACCESS"))
+		string script = m_path_to_scripts + "/" + result->d_name;
+		debug << "<<<<<<<< ++" << script << std::endl;
+
+		if (!strcmp(result->d_name, "IN_ACCESS") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_ACCESS;
 		}
 
-		if (!strcmp(result->d_name, "IN_ATTRIB"))
+		if (!strcmp(result->d_name, "IN_ATTRIB") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_ATTRIB;
 		}
 
-		if (!strcmp(result->d_name, "IN_CLOSE_WRITE"))
+		if (!strcmp(result->d_name, "IN_CLOSE_WRITE") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_CLOSE_WRITE;
 		}
 
-		if (!strcmp(result->d_name, "IN_CLOSE_NOWRITE"))
+		if (!strcmp(result->d_name, "IN_CLOSE_NOWRITE") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_CLOSE_NOWRITE;
 		}
 
-		if (!strcmp(result->d_name, "IN_CREATE"))
+		if (!strcmp(result->d_name, "IN_CREATE") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_CREATE;
 		}
 
-		if (!strcmp(result->d_name, "IN_DELETE"))
+		if (!strcmp(result->d_name, "IN_DELETE") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_DELETE;
 		}
 
-		if (!strcmp(result->d_name, "IN_DELETE_SELF"))
+		if (!strcmp(result->d_name, "IN_DELETE_SELF") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_DELETE_SELF;
 		}
 
-		if (!strcmp(result->d_name, "IN_MODIFY"))
+		if (!strcmp(result->d_name, "IN_MODIFY") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_MODIFY;
 		}
 
-		if (!strcmp(result->d_name, "IN_MOVE_SELF"))
+		if (!strcmp(result->d_name, "IN_MOVE_SELF") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_MOVE_SELF;
 		}
 
-		if (!strcmp(result->d_name, "IN_MOVED_FROM"))
+		if (!strcmp(result->d_name, "IN_MOVED_FROM") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_MOVED_FROM;
 		}
 
-		if (!strcmp(result->d_name, "IN_MOVED_TO"))
+		if (!strcmp(result->d_name, "IN_MOVED_TO") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_MOVED_TO;
 		}
 
-		if (!strcmp(result->d_name, "IN_OPEN"))
+		if (!strcmp(result->d_name, "IN_OPEN") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_OPEN;
 		}
 
-		if (!strcmp(result->d_name, "IN_RENAME"))
+		if (!strcmp(result->d_name, "IN_RENAME") && !access(script.c_str(), X_OK))
 		{
 			m_catch_rename = true;
 		}
