@@ -165,7 +165,6 @@ void Config::readMask()
 		}
 
 		string script = m_path_to_scripts + "/" + result->d_name;
-		debug << "<<<<<<<< ++" << script << std::endl;
 
 		if (!strcmp(result->d_name, "IN_ACCESS") && !access(script.c_str(), X_OK))
 		{
