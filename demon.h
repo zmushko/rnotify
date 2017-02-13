@@ -11,6 +11,7 @@ class Demon
 		Error	error;
 		Debug	debug;
 		Info	info;
+		Warning	warning;
 
 		Config*	conf;
 		void	printUsage();

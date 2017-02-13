@@ -13,6 +13,7 @@ using namespace std;
 #include "config.h"
 
 Config::Config(int count, char** values) : 
+	m_all(false),
 	m_verbose(2), 
 	m_pidfile_path("/var/run"),
 	m_logfile_path(""),
@@ -38,6 +39,11 @@ Config::~Config()
 	{
 		delete *itr;
 	}
+}
+
+bool Config::getAll()
+{
+	return m_all;
 }
 
 string Config::getMyName()
@@ -112,6 +118,12 @@ char** Config::getWatch()
 
 void Config::readMask()
 {
+	if (m_all)
+	{
+		m_mask = IN_ALL_EVENTS;
+		return;
+	}
+
 	if (m_path_to_scripts.empty())
 	{
 		m_mask = 0;
@@ -229,13 +241,16 @@ void Config::readMask()
 
 void Config::readOpts(int count, char** values)
 {
-	const char* opts = "v:p:l:dhw:s:e:t:zu";
+	const char* opts = "av:p:l:dhw:s:e:t:zu";
 	char opt = 0;
 
 	while (-1 != (opt = getopt(count, values, opts)))
 	{
 		switch (opt)
 		{
+			case 'a':
+				m_all = true;
+				break;
 			case 'v':
 				m_verbose = atoi(optarg);
 				break;

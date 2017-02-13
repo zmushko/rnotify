@@ -83,7 +83,6 @@ Demon::Demon(int count, char** values)
 
 	setSigactions();
 	initDemon();
-	stopDemon();
 	runObserver();
 	stopDemon();
 }
@@ -209,10 +208,15 @@ void Demon::runObserver()
 		int r = waitNotify(ntf, &np, &mask, conf->getHearbeat() * 1e3, &cookie);
 		if (r < 0)
 		{
-			if (errno == EINTR ||
-				errno == EACCES )
+			if (errno == EACCES)
 			{
 				error << " *** Ignored *** " << np << " " << std::endl;
+				errno = 0;
+				continue;
+			}
+			else if (errno == EINTR)
+			{
+				warning << "Interrupted system call" << std::endl;
 				errno = 0;
 				continue;
 			}
@@ -290,7 +294,14 @@ void Demon::runObserver()
 		
 		if (np && name)
 		{
-			spawnChild(np, name);
+			if (!conf->getAll())
+			{
+				spawnChild(np, name);
+			}
+			else
+			{
+				std::cout << name << ":" << cookie << ":" << np << std::endl;
+			}
 		}
 
 		free(np);
@@ -324,7 +335,7 @@ void Demon::setSigactions()
 
 void Demon::initDemon()
 {
-	if (conf->getNoDemon())
+	if (conf->getNoDemon() || conf->getAll())
 	{
 		return;
 	}
@@ -379,6 +390,8 @@ void Demon::printUsage()
 		<< "\twhere: path1, path2, ... - path to notified folders" << std::endl
 		<< std::endl
 		<< "Options:" << std::endl 
+		<< "\t-a mode that will print notifications to stdout (this will skip -s option and enable -d option)" << std::endl
+		<< "\t   output format: <notification>:<cookie>:<path>" << std::endl
 		<< "\t-v [verbose level 0-7] default: 2, the possible value for the verbose are:" << std::endl
 		<< Debug::Legenda("\t   ") << std::endl
 		<< "\t-p [path to pid file] default: /var/run" << std::endl

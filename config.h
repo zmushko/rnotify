@@ -10,6 +10,7 @@ class Config
 		Config(int count, char** values);
 		~Config();
 		
+		bool getAll();
 		bool getNeedHelp();
 		bool getCatchRename();
 		bool getEnableSuppressor();
@@ -28,6 +29,7 @@ class Config
 	private:
 		Fatal fatal;
 		Debug debug;
+		bool m_all;
 		int	m_verbose;
 		bool m_no_demon;
 		int	m_heartbeat;
