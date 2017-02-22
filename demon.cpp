@@ -1,6 +1,7 @@
 #include <iostream>
 #include <exception>
 #include <stdexcept>
+#include <list>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -69,6 +70,151 @@ namespace DemonNs
 			rval += std::string(buf);
 		}
 	}
+
+	class pendingEvents
+	{
+	private:
+
+		struct Event
+		{
+			std::string path;
+			uint32_t mask;
+			uint32_t cookie;
+			struct timespec mtime;
+		};
+		std::list<Event*> events;
+
+	public:
+		
+		pendingEvents()
+		{
+		}
+
+		~pendingEvents()
+		{
+			std::list<Event*> :: iterator i;
+			for (i = events.begin(); i != events.end(); ++i)
+			{
+				delete *i;
+				//std::cout << "<<<<< " << (*i)->path << std::endl; 
+			}
+		}
+
+		void Push(std::string const& path, uint32_t mask, uint32_t cookie)
+		{
+			Event* event = new Event;
+
+			event->path = path;
+			event->mask = mask;
+			event->cookie = cookie;
+
+			if (!::access(path.c_str(), F_OK))
+			{
+				struct stat st;
+				memset(&st, 0, sizeof(st));
+				_THROW_IF(-1 == ::stat(path.c_str(), &st));
+
+				event->mtime.tv_sec = st.st_mtim.tv_sec;
+				event->mtime.tv_nsec = st.st_mtim.tv_nsec;
+			}
+			
+			events.push_back(event);
+		}
+
+		bool pickPair(std::string& path, uint32_t mask, uint32_t cookie)
+		{
+			std::list<Event*> :: iterator i;
+			for (i = events.begin(); i != events.end(); ++i)
+			{
+				if ((((*i)->mask & IN_MOVED_TO && mask & IN_MOVED_FROM) ||
+					((*i)->mask & IN_MOVED_FROM && mask & IN_MOVED_TO)) &&
+					cookie == (*i)->cookie)
+				{
+					path = (*i)->path;
+					Event* e = *i;
+					i = events.erase(i);
+					delete e;
+
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		bool detectFlood(std::string const& path, uint32_t mask, int heartbeat)
+		{
+			if (-1 == ::access(path.c_str(), F_OK))
+			{
+				return false;
+			}
+
+			std::list<Event*> :: iterator i;
+			for (i = events.begin(); i != events.end(); ++i)
+			{
+				if ((*i)->mask & IN_MODIFY && (*i)->path == path)
+				{
+					struct stat st;
+					memset(&st, 0, sizeof(st));
+					_THROW_IF(-1 == ::stat((*i)->path.c_str(), &st));
+
+					long sec = st.st_mtim.tv_sec - (*i)->mtime.tv_sec;
+					long nsec = (*i)->mtime.tv_nsec ? 1E9L - (*i)->mtime.tv_nsec + st.st_mtim.tv_nsec : st.st_mtim.tv_nsec;
+					long delta = sec * 1E6L + nsec / 1E3L;
+
+					if (delta <= heartbeat * 1E6L)
+					{
+						(*i)->mtime.tv_sec = st.st_mtim.tv_sec;
+						(*i)->mtime.tv_nsec = st.st_mtim.tv_nsec;
+						return true;
+					}
+					else
+					{
+						Event* e = *i;
+						i = events.erase(i);
+						delete e;
+
+						return false;
+					}
+				}
+			}
+			
+			Push(path, mask, 0);
+
+			return false;
+		}
+		
+		bool pickExpired(char** path, uint32_t* mask, int heartbeat)
+		{
+			struct timespec t = {0, 0};
+			_THROW_IF(clock_gettime(CLOCK_REALTIME, &t));
+
+			std::list<Event*> :: iterator i;
+			for (i = events.begin(); i != events.end(); ++i)
+			{
+				long sec = t.tv_sec - (*i)->mtime.tv_sec;
+				long nsec = (*i)->mtime.tv_nsec ? 1E9L - (*i)->mtime.tv_nsec + t.tv_nsec : t.tv_nsec;
+				long delta = sec * 1E6L + nsec / 1E3L;
+
+std::cout << "delta=" << delta << " heartbeat=" << heartbeat << "000000" << std::endl;
+
+				if (delta > heartbeat * 1E6L)
+				{
+					*path = strdup((*i)->path.c_str());
+					_THROW_IF(*path == NULL);
+					*mask |= (*i)->mask;
+					
+					Event* e = *i;
+					i = events.erase(i);
+					delete e;
+
+					return true;
+				}
+			}
+
+			return false;
+		}
+	};
 }
 
 Demon::Demon(int count, char** values)
@@ -92,7 +238,7 @@ Demon::~Demon()
 	delete conf;
 }
 
-void Demon::spawnChild(const char* path, const char* name)
+void Demon::spawnChild(const char* path, const char* name, const char* pair)
 {
 	if (path == NULL || name == NULL)
 	{
@@ -171,7 +317,7 @@ void Demon::spawnChild(const char* path, const char* name)
 		dup2(fd2[1], STDERR_FILENO);
 
 		std::string path_name = conf->getPathToScripts() + "/" + name;
-		execlp(path_name.c_str(), name, path, NULL);
+		execlp(path_name.c_str(), name, path, pair, NULL);
 		
 		exit(errno);
 	}
@@ -195,6 +341,8 @@ void Demon::runObserver()
 		}
 	}
 
+	DemonNs::pendingEvents pending; 
+
 	for (;;)
 	{
 		if (g_SIGTERM || g_SIGINT)
@@ -202,39 +350,44 @@ void Demon::runObserver()
 			break;
 		}
 
-		char* np	= NULL;
-		uint32_t mask	= 0;
+		char* np = NULL;
+		uint32_t mask = 0;
 		uint32_t cookie	= 0;
-		int r = waitNotify(ntf, &np, &mask, conf->getHearbeat() * 1e3, &cookie);
-		if (r < 0)
-		{
-			if (errno == EACCES)
+		//if (false == pending.pickExpired(&np, &mask, conf->getHearbeat()))
+		//{
+			int r = waitNotify(ntf, &np, &mask, conf->getHearbeat() * 1E3L, &cookie);
+			if (r < 0)
 			{
-				error << " *** Ignored *** " << np << " " << std::endl;
-				errno = 0;
-				continue;
+				if (errno == EACCES)
+				{
+					error << " *** Ignored *** " << np << " " << std::endl;
+					errno = 0;
+					continue;
+				}
+				else if (errno == EINTR)
+				{
+					warning << "Interrupted system call" << std::endl;
+					errno = 0;
+					continue;
+				}
+				else if (errno == ENOSPC)
+				{
+					fatal << " Limit of /proc/sys/fs/inotify/max_user_watches was reached, please increase it and restart me." << std::endl;
+				}
+				else
+				{
+					error << "Error in waitNotify(" << np << ")" << std::endl;
+				}			
+				break;
 			}
-			else if (errno == EINTR)
-			{
-				warning << "Interrupted system call" << std::endl;
-				errno = 0;
-				continue;
-			}
-			else if (errno == ENOSPC)
-			{
-				fatal << " Limit of /proc/sys/fs/inotify/max_user_watches was reached, please increase it and restart me." << std::endl;
-			}
-			else
-			{
-				error << "Error in waitNotify(" << np << ")" << std::endl;
-			}			
-			break;
-		}
+		//}
 
-		if (np == NULL)
-		{
-			continue;
-		}
+		//if (np == NULL)
+		//{
+		//	continue;
+		//}
+
+		std::string pair;
 
 		const char* name = NULL;
 		if (mask & IN_ACCESS)
@@ -274,7 +427,10 @@ void Demon::runObserver()
 
 		if (mask & IN_MODIFY)
 		{
-			name = "IN_MODIFY";
+			if (false == pending.detectFlood(np, mask, conf->getHearbeat()))
+			{
+				name = "IN_MODIFY";
+			}
 		}
 
 		if (mask & IN_MOVE_SELF)
@@ -284,12 +440,26 @@ void Demon::runObserver()
 		
 		if (mask & IN_MOVED_FROM)
 		{
-			name = "IN_MOVED_FROM";
+			if (pending.pickPair(pair, mask, cookie))
+			{
+				name = "IN_RENAME";
+			}
+			else
+			{
+				pending.Push(np, mask, cookie);
+			}
 		}
 		
 		if (mask & IN_MOVED_TO)
 		{
-			name = "IN_MOVED_TO";
+			if (pending.pickPair(pair, mask, cookie))
+			{
+				name = "IN_RENAME";
+			}
+			else
+			{
+				pending.Push(np, mask, cookie);
+			}
 		}
 		
 		if (mask & IN_OPEN)
@@ -301,11 +471,18 @@ void Demon::runObserver()
 		{
 			if (!conf->getAll())
 			{
-				spawnChild(np, name);
+				spawnChild(np, name, pair.empty() ? NULL : pair.c_str());
 			}
 			else
 			{
-				std::cout << name << ":" << cookie << ":" << np << std::endl;
+				if (!pair.empty())
+				{
+					std::cout << "IN_RENAME_FROM:" << pair << "\n" << "IN_RENAME_TO:" << np << std::endl;
+				}
+				else
+				{
+					std::cout << name << ":" << np << std::endl;
+				}
 			}
 		}
 
@@ -405,12 +582,13 @@ void Demon::printUsage()
 		<< "\t   each script should have the same name as name of notification for ex. IN_DELETE and be executable," << std::endl
 		<< "\t   scripts itself will assigned to his appropriated events automatically, and receives full path of the item as first argument," << std::endl
 		<< "\t   available scripts names is: IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE, IN_CREATE" << std::endl
-		<< "\t   IN_DELETE, IN_DELETE_SELF, IN_MODIFY, IN_MOVE_SELF, IN_MOVED_FROM, IN_MOVED_TO, IN_OPEN and" << std::endl
+		<< "\t   IN_DELETE, IN_DELETE_SELF, IN_MODIFY, IN_MOVE_SELF, IN_OPEN and" << std::endl
 		<< "\t   IN_RENAME - is unique notification name will receives two arguments as `from` and `to`" << std::endl
-		<< "\t   IN_MOVED_FROM, IN_MOVED_TO - is notification has second argument 'cookie' that pairing them both" << std::endl
 		<< "\t-u suppress notifications after scripts above in case if script produce itself notification" << std::endl
 		<< "\t-e [exclude] - regular expression to define patterns that excluded from watching, for ex: ^\\." << std::endl
 		<< "\t-t [heartbeat] - timeout for IN_MOVED_FROM/IN_MOVED_TO when it will converted to IN_DELETE/IN_CREATE in miliseconds" << std::endl
+		<< "\t   this parameter also used to delay the flood of the IN_MODIFY when final notification " << std::endl
+		<< "\t   will produced not earlier than timeout expired after last one" << std::endl
 		<< "\t-z skip files with zero length" << std::endl
 		<< "\t-d no daemon mode (log will print to stdout if no enabled -l option)" << std::endl
 		<< "\t-h this message" << std::endl

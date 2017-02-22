@@ -133,12 +133,18 @@ void Config::readMask()
 	DIR* dp	= opendir(m_path_to_scripts.c_str());
 	if (dp == NULL)
 	{
-		fatal << " Nothing to do in " << m_path_to_scripts.c_str() << "/. Please follow instructions for -s argument." << std::endl; 
+		fatal << " Nothing to do in " << m_path_to_scripts.c_str() << "/. Please follow instructions for -s argument or use -a argument." << std::endl; 
 		m_need_help = true;
 		return;
 	}
 
-	size_t dirent_sz = offsetof(struct dirent, d_name) + pathconf(m_path_to_scripts.c_str(), _PC_NAME_MAX);
+	long name_max = pathconf(m_path_to_scripts.c_str(), _PC_NAME_MAX);
+	if (name_max == -1)
+	{
+		name_max = 255;
+	}
+	
+	size_t dirent_sz = offsetof(struct dirent, d_name) + name_max;
 	struct dirent* entry = new struct dirent[dirent_sz + 1];
 	if (entry == NULL)
 	{
@@ -209,16 +215,6 @@ void Config::readMask()
 		if (!strcmp(result->d_name, "IN_MOVE_SELF") && !access(script.c_str(), X_OK))
 		{
 			m_mask |= IN_MOVE_SELF;
-		}
-
-		if (!strcmp(result->d_name, "IN_MOVED_FROM") && !access(script.c_str(), X_OK))
-		{
-			m_mask |= IN_MOVED_FROM;
-		}
-
-		if (!strcmp(result->d_name, "IN_MOVED_TO") && !access(script.c_str(), X_OK))
-		{
-			m_mask |= IN_MOVED_TO;
 		}
 
 		if (!strcmp(result->d_name, "IN_OPEN") && !access(script.c_str(), X_OK))

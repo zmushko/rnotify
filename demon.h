@@ -14,12 +14,13 @@ class Demon
 		Warning	warning;
 
 		Config*	conf;
+		
 		void	printUsage();
 		void	initDemon();
 		void	stopDemon();
 		void	setSigactions();
 		void	runObserver();
-		void	spawnChild(const char* path, const char* name);
+		void	spawnChild(const char* path, const char* name, const char* pair);
 
 	public:
 		Demon(int count, char** values);
